@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel Admin – Marcación CD (prototipo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Great+Vibes&family=Dancing+Script:wght@600&display=swap">
+<style>
+:root{
+  --blue:#0071CE;--blue-d:#004F9A;--navy:#041E42;--yellow:#FFC220;
+  --bg:#F4F6FA;--card:#FFFFFF;--text:#041E42;--muted:#5A6880;--border:#E2E7EF;--track:#EEF2F8;
+  --ok-bg:#E7F7EE;--ok:#0B6B3A;--warn-bg:#FFF6DB;--warn:#5C4300;--bad-bg:#FDE7E4;--bad:#9B1C10;--info-bg:#E6F0FB;--info:#004F9A;
+}
+body.dark{--bg:#0B1A33;--card:#12264A;--text:#EAF0FA;--muted:#A9B8D3;--border:#24406E;--track:#1B3360;
+  --ok-bg:#103A27;--ok:#86E3B0;--warn-bg:#3A2E0A;--warn:#FFD766;--bad-bg:#3D1712;--bad:#FFB4A8;--info-bg:#122E55;--info:#A9CBF2}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+a{color:var(--blue)}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:flex;min-height:100vh}
+.side{width:250px;flex-shrink:0;background:var(--navy);color:#fff;padding:20px 12px;display:flex;flex-direction:column;gap:3px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px 16px}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:var(--yellow);display:flex;align-items:center;justify-content:center}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:42px;padding:0 12px;border-radius:10px;color:#C9D4E6;text-decoration:none;font-weight:600}
+.nav:hover{background:#0A2B5C;color:#fff}
+.nav.on{background:var(--blue);color:#fff}
+.nav .ic{display:flex;align-items:center;gap:10px}
+.badge{background:var(--yellow);color:var(--navy);border-radius:999px;padding:1px 8px;font-size:12px;font-weight:800}
+.me{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px 8px;border-top:1px solid #1F3E6E;color:#fff;text-decoration:none}
+.av{width:36px;height:36px;border-radius:18px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+.main{flex:1;min-width:0;padding:24px 28px 48px}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}
+.crumb{font-size:13px;color:var(--muted);margin-bottom:4px}
+.crumb a{text-decoration:none}
+h1{margin:0;font-size:26px;font-weight:800}
+h2{margin:0;font-size:16px;font-weight:700}
+.sub{color:var(--muted);margin-top:4px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px}
+.grid{display:grid;gap:14px}
+.k4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.row{display:flex;flex-wrap:wrap;gap:16px}
+.row>.card{flex:1 1 340px}
+.kpi .l{color:var(--muted);font-size:13px}.kpi .v{font-size:32px;font-weight:800;margin:6px 0 2px}.kpi .n{color:var(--muted);font-size:12px}
+.btn{height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);white-space:nowrap}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.pri:hover{background:var(--blue-d)}
+.btn.out{border-color:var(--blue);color:var(--blue);background:transparent}
+.btn.ok{background:#1FA463;border-color:#1FA463;color:#fff}
+.btn.danger{border-color:#C0392B;color:#C0392B;background:transparent}
+.btn.sm{height:34px;padding:0 10px;font-size:13px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-weight:600;cursor:pointer}
+.pill.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.tabs{display:inline-flex;gap:4px;background:var(--track);padding:4px;border-radius:12px}
+.tab{height:36px;padding:0 14px;border:0;border-radius:9px;background:transparent;font-weight:600;color:var(--muted);cursor:pointer}
+.tab.on{background:var(--card);color:var(--blue)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:10px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--track)}
+.chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.c-ok{background:var(--ok-bg);color:var(--ok)}.c-warn{background:var(--warn-bg);color:var(--warn)}.c-bad{background:var(--bad-bg);color:var(--bad)}.c-info{background:var(--info-bg);color:var(--info)}
+.c-navy{background:var(--navy);color:var(--yellow)}.c-pur{background:#EDE7FB;color:#4B2E9B}.c-yel{background:#FFF3CC;color:#6B4E00}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.field input,.field select,.field textarea{height:42px;border-radius:10px;border:1px solid var(--border);background:var(--card);padding:0 12px;font-weight:500}
+.field textarea{height:auto;padding:10px 12px;resize:vertical}
+.f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.muted{color:var(--muted)}
+.bar{height:10px;border-radius:5px;background:var(--track);overflow:hidden}.bar>div{height:10px;background:var(--blue);border-radius:5px}
+.sig{font-family:'Great Vibes',cursive;font-size:34px;color:#041E42;background:#fff;border:1px solid #E2E7EF;border-radius:10px;height:72px;display:flex;align-items:center;justify-content:center}
+.toast{position:fixed;right:20px;bottom:20px;background:var(--navy);color:#fff;padding:14px 18px;border-radius:12px;font-weight:600;display:none;gap:10px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:50;max-width:90vw}
+.toast.show{display:flex}.toast i{width:8px;height:8px;border-radius:4px;background:var(--yellow);flex-shrink:0}
+.modal{position:fixed;inset:0;background:rgba(4,30,66,.55);display:none;align-items:flex-start;justify-content:center;padding:90px 16px;z-index:40}
+.modal.show{display:flex}
+.dlg{width:460px;max-width:100%;background:var(--card);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.switch{width:52px;height:30px;border-radius:15px;border:0;background:#9AA7BC;position:relative;cursor:pointer;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:#fff;transition:left .15s}
+.switch.on{background:#1FA463}.switch.on::after{left:25px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .d{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend b{width:12px;height:12px;border-radius:3px;display:inline-block}
+.burger{display:none}
+.tcell{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:118px;padding:6px 10px;border:1px dashed transparent;border-radius:10px;background:transparent;cursor:pointer;text-align:left;position:relative}
+.tcell:hover{border-color:var(--blue);background:var(--info-bg)}
+.tcell b{font-size:16px;font-variant-numeric:tabular-nums;padding-left:14px}
+.tcell span{font-size:11px;color:var(--muted);padding-left:14px}
+.tcell i{position:absolute;left:10px;top:13px;width:8px;height:8px;border-radius:4px}
+.tcell.empty{border-color:var(--border);color:var(--blue);font-weight:700;justify-content:center;min-height:44px}
+.daysep td{background:var(--track);font-weight:700;font-size:12px;color:var(--muted);padding:8px}
+.tpair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tbox{border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.tbox input[type=time]{height:46px;font-size:20px;font-weight:700;border-radius:10px;border:1px solid var(--border);background:var(--card);padding:0 10px}
+.tbox.focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,113,206,.18)}
+/* login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:20px}
+.login .box{width:420px;max-width:100%;background:#fff;color:#041E42;border-radius:22px;padding:30px;display:flex;flex-direction:column;gap:14px}
+@media (max-width:900px){
+  .side{position:fixed;left:0;top:0;z-index:30;transform:translateX(-100%);transition:transform .2s}
+  .side.open{transform:none}
+  .burger{display:inline-flex}
+  .main{padding:16px}
+  .f2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="toast" id="toast" role="status"><i></i><span id="toastTxt"></span></div>
+<div class="modal" id="modal"><div class="dlg" id="dlg" role="dialog"></div></div>
+
+<script>
+/* ===================== DATOS QUEMADOS ===================== */
+const CDS = [
+  {code:'5184',name:'Hortifruti',lat:'13.6731',lng:'-89.2794',radius:150,alert:1000,pa:'Rosa Hernández',guards:9,onDuty:6,qr:true,rot:30,kiosk:'kiosco5184@gmail.com'},
+  {code:'7417',name:'Apopa',lat:'13.8017',lng:'-89.1793',radius:150,alert:1000,pa:'Mario Castillo',guards:7,onDuty:4,qr:false,rot:30,kiosk:null},
+  {code:'7018',name:'San Juan Opico',lat:'13.8742',lng:'-89.3601',radius:150,alert:1000,pa:'Sin asignar',guards:6,onDuty:3,qr:true,rot:60,kiosk:'kiosco7018@gmail.com'}
+];
+const SHIFTS = [
+  {name:'Diurno',range:'[hh:mm – hh:mm]',cls:'c-yel'},
+  {name:'Vespertino',range:'[hh:mm – hh:mm]',cls:'c-warn'},
+  {name:'Nocturno',range:'[hh:mm – hh:mm]',cls:'c-info'}
+];
+let USERS = [
+  {id:1,first:'Daniel',last:'Flores',email:'daniel.flores@gmail.com',role:'Seguridad',cd:'7417',status:'Pendiente',via:'Google',sig:null,created:'10/11/2026'},
+  {id:2,first:'Karla',last:'Morales',email:'karla.m@gmail.com',role:'Seguridad',cd:'5184',status:'Pendiente',via:'Correo',sig:null,created:'10/11/2026'},
+  {id:3,first:'Carlos',last:'Méndez',email:'carlos.mendez@gmail.com',role:'Seguridad',cd:'5184',status:'Activo',via:'Google',sig:{font:'Great Vibes',date:'12/10/2026',locked:true},created:'01/09/2026'},
+  {id:4,first:'Ana',last:'Rivas',email:'ana.rivas@gmail.com',role:'Seguridad',cd:'5184',status:'Activo',via:'Correo',sig:{font:'Dancing Script',date:'02/09/2026',locked:false},created:'15/08/2026'},
+  {id:5,first:'Rosa',last:'Hernández',email:'rosa.h@gmail.com',role:'PA',cd:'5184',status:'Activo',via:'Google',sig:null,created:'01/08/2026'},
+  {id:6,first:'Mario',last:'Castillo',email:'mario.c@gmail.com',role:'PA',cd:'7417',status:'Activo',via:'Correo',sig:null,created:'01/08/2026'},
+  {id:7,first:'Kiosco',last:'Garita 5184',email:'kiosco5184@gmail.com',role:'Kiosco QR',cd:'5184',status:'Activo',via:'Correo',sig:null,created:'05/09/2026'},
+  {id:8,first:'Luis',last:'Aguilar',email:'luis.aguilar@gmail.com',role:'Seguridad',cd:'7417',status:'Activo',via:'Google',sig:{font:'Great Vibes',date:'20/10/2026',locked:true},created:'20/08/2026'},
+  {id:9,first:'José',last:'López',email:'jose.lopez@gmail.com',role:'Seguridad',cd:'7018',status:'Bloqueado',via:'Google',sig:{font:'Dancing Script',date:'05/08/2026',locked:true},created:'01/08/2026'},
+  {id:10,first:'María',last:'Pérez',email:'maria.perez@gmail.com',role:'Seguridad',cd:'7018',status:'Activo',via:'Correo',sig:{font:'Great Vibes',date:'11/09/2026',locked:true},created:'01/09/2026'},
+  {id:11,first:'Pedro',last:'Ramos',email:'pedro.ramos@gmail.com',role:'Seguridad',cd:'7417',status:'Activo',via:'Google',sig:{font:'Dancing Script',date:'30/09/2026',locked:true},created:'10/09/2026'},
+  {id:12,first:'Sofía',last:'Guzmán',email:'sofia.g@gmail.com',role:'Seguridad',cd:'7018',status:'Activo',via:'Correo',sig:{font:'Great Vibes',date:'10/11/2026',locked:true},created:'10/11/2026'}
+];
+/* Una fila = una jornada (entrada + salida del mismo turno) */
+const P = (t,m,d,s) => ({t,m,d,s});
+let JORN = [
+  {id:1,uid:3,date:'10/11',shift:'Vespertino',in:P('13:54','QR kiosco','—','ok'),out:null},
+  {id:2,uid:4,date:'10/11',shift:'Vespertino',in:P('13:48','GPS','38 m','ok'),out:null},
+  {id:3,uid:8,date:'10/11',shift:'Vespertino',in:P('13:40','GPS','1.3 km','alerta'),out:null},
+  {id:4,uid:10,date:'10/11',shift:'Diurno',in:P('05:58','GPS','20 m','ok'),out:P('13:05','GPS','420 m','obs')},
+  {id:5,uid:11,date:'10/11',shift:'Diurno',in:P('06:02','GPS','15 m','ok'),out:P('13:02','GPS sin conexión','60 m','sync')},
+  {id:6,uid:12,date:'10/11',shift:'Diurno',in:P('05:51','GPS','12 m','ok'),out:null},
+  {id:7,uid:3,date:'09/11',shift:'Vespertino',in:P('13:57','GPS','25 m','ok'),out:P('22:03','GPS','30 m','ok')},
+  {id:8,uid:4,date:'09/11',shift:'Vespertino',in:P('13:50','QR kiosco','—','ok'),out:P('22:01','QR kiosco','—','ok')},
+  {id:9,uid:9,date:'09/11',shift:'Nocturno',in:P('22:05','GPS','40 m','ok'),out:P('06:00','Editada por admin','—','ok'),edited:true},
+  {id:10,uid:8,date:'09/11',shift:'Nocturno',in:P('21:58','GPS','18 m','ok'),out:null},
+  {id:11,uid:10,date:'09/11',shift:'Diurno',in:P('06:10','GPS','22 m','ok'),out:P('14:00','GPS','35 m','ok')},
+  {id:12,uid:12,date:'08/11',shift:'Diurno',in:P('05:55','GPS','10 m','ok'),out:P('14:02','GPS','14 m','ok')}
+];
+const TODAY = '10/11';
+let ALERTS = [
+  {id:1,jid:3,part:'in',uid:8,sev:'Alta',text:'Entrada marcada a 1.3 km del CD (fuera del límite de 1 km)',time:'10/11 13:40',state:'abierta',dist:1300},
+  {id:2,jid:4,part:'out',uid:10,sev:'Media',text:'Salida a 420 m (entre 150 m y 1 km)',time:'10/11 13:05',state:'abierta',dist:420},
+  {id:3,jid:5,part:'out',uid:11,sev:'Info',text:'Marca sin conexión: hora del celular 13:02, enviada 13:20',time:'10/11 13:20',state:'abierta',dist:60},
+  {id:4,jid:10,part:'out',uid:8,sev:'Media',text:'No marcó salida del turno nocturno del 09/11',time:'10/11 07:00',state:'abierta',dist:18}
+];
+let LOG = [
+  {when:'10/11 09:12',who:'Admin principal',action:'Aprobó el registro de Sofía Guzmán (Seguridad · San Juan Opico 7018)'},
+  {when:'09/11 22:40',who:'Admin principal',action:'Editó la salida de José López: 21:15 → 22:00. Motivo: verificado con hoja de papel'},
+  {when:'09/11 18:03',who:'Admin principal',action:'Bloqueó a José López'},
+  {when:'08/11 10:30',who:'Admin principal',action:'Cambió la retención de datos de 60 a 90 días'},
+  {when:'05/11 08:15',who:'Rosa Hernández (PA)',action:'Aceptó la marca con observación de Ana Rivas'}
+];
+let ADMINS = [{name:'Admin principal',email:'admin.cd@gmail.com',since:'01/08/2026'}];
+let REPORTS = [
+  {name:'Asistencia por CD · Hortifruti 5184',range:'01/11 – 09/11',fmt:'Excel',by:'Rosa Hernández (PA)',when:'09/11 17:02'},
+  {name:'Alertas de ubicación · Todos',range:'16/10 – 31/10',fmt:'PDF',by:'Admin principal',when:'01/11 08:30'}
+];
+let CFG = {retention:90,theme:'claro',appName:'Marcación CD',sigDays:30};
+let UI = {cd:'Todos',userTab:'Pendiente',logged:false,assistDate:'Hoy',q:'',onlyIssues:false};
+
+/* ===================== UTILIDADES ===================== */
+const $ = s => document.querySelector(s);
+const u = id => USERS.find(x => x.id === id);
+const full = x => x.first + ' ' + x.last;
+const ini = x => (x.first[0] + x.last[0]).toUpperCase();
+const cdName = code => { const c = CDS.find(x => x.code === code); return c ? c.name + ' ' + c.code : code; };
+const inCd = code => UI.cd === 'Todos' || UI.cd === code;
+const ST = {ok:['Dentro del radio','c-ok'],obs:['Observación','c-warn'],alerta:['Fuera de 1 km','c-bad'],sync:['Sin conexión · sincronizada','c-info'],aceptada:['Aceptada','c-ok'],rechazada:['Rechazada','c-bad']};
+const ROLE = {Seguridad:'c-info',PA:'c-yel','Kiosco QR':'c-pur',Admin:'c-navy'};
+const USTAT = {Pendiente:'c-warn',Activo:'c-ok',Bloqueado:'c-bad'};
+const SEV = {Alta:'c-bad',Media:'c-warn',Info:'c-info'};
+const toMin = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
+function hours(j){ if(!j.out) return null; let d=toMin(j.out.t)-toMin(j.in.t); if(d<0) d+=1440; return Math.floor(d/60)+' h '+String(d%60).padStart(2,'0')+' min'; }
+const RANK = {alerta:4,rechazada:4,obs:3,sync:2,ok:1,aceptada:1};
+function jStatus(j){
+  if(!j.out) return j.date===TODAY ? ['En turno','c-info'] : ['Sin salida','c-bad'];
+  const w = [j.in.s,j.out.s].sort((a,b)=>RANK[b]-RANK[a])[0];
+  return w==='ok'||w==='aceptada' ? ['Completa','c-ok'] : ST[w];
+}
+const hasIssue = j => { const s=jStatus(j)[0]; return s!=='Completa' && s!=='En turno'; };
+function cellTime(j,part){
+  const p = j[part];
+  if(!p) return `<button class="tcell empty" data-jedit="${j.id}" data-focus="${part}" title="Agregar ${part==='in'?'entrada':'salida'}">+ Agregar</button>`;
+  const dot = {ok:'#1FA463',aceptada:'#1FA463',obs:'#E0A100',alerta:'#D93A26',rechazada:'#D93A26',sync:'#0071CE'}[p.s];
+  return `<button class="tcell" data-jedit="${j.id}" data-focus="${part}" title="${p.m} · ${p.d} · ${ST[p.s][0]}"><i style="background:${dot}"></i><b>${p.t}</b><span>${p.m}${p.d!=='—'?' · '+p.d:''}</span></button>`;
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function now(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function log(a){LOG.unshift({when:now(),who:'Admin principal',action:a});}
+let tt; function toast(m){$('#toastTxt').textContent=m;$('#toast').classList.add('show');clearTimeout(tt);tt=setTimeout(()=>$('#toast').classList.remove('show'),2800);}
+function openModal(html){$('#dlg').innerHTML=html;$('#modal').classList.add('show');}
+function closeModal(){$('#modal').classList.remove('show');}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+function go(h){location.hash=h;}
+const I = {
+  home:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  list:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  users:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c1-4 4-6 7-6s6 2 7 6M17 11a3 3 0 1 0 0-6M22 21c-.5-3-2-4.5-4-5"/></svg>',
+  cd:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"/></svg>',
+  alert:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"/></svg>',
+  file:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6"/></svg>',
+  qr:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7M14 20h3"/></svg>',
+  pen:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 17c3-4 5 2 8-2s4-6 6-3 2 4 4 2M3 21h18"/></svg>',
+  book:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h11a3 3 0 0 1 3 3v14H7a3 3 0 0 1-3-3zM18 17H7a3 3 0 0 0-3 3"/></svg>',
+  gear:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  dl:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',
+  menu:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+  back:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>'
+};
+
+/* ===================== LAYOUT ===================== */
+const NAV = [
+  ['resumen','Resumen',I.home],['asistencia','Registros de asistencia',I.list],['usuarios','Usuarios',I.users,()=>USERS.filter(x=>x.status==='Pendiente').length],
+  ['cds','Centros de distribución',I.cd],['alertas','Alertas',I.alert,()=>ALERTS.filter(a=>a.state==='abierta').length],['reportes','Reportes',I.file],
+  ['qr','Kiosco QR',I.qr],['firmas','Firmas',I.pen],['bitacora','Bitácora',I.book],['config','Configuración',I.gear]
+];
+function shell(active, title, sub, body, opts={}){
+  const navHtml = NAV.map(([k,l,ic,b])=>{const n=b?b():0;return `<a class="nav ${active===k?'on':''}" href="#${k}"><span class="ic">${ic}${l}</span>${n?`<span class="badge">${n}</span>`:''}</a>`;}).join('');
+  const filter = opts.noFilter ? '' : `<div class="pills" role="group" aria-label="Filtrar por CD">${['Todos','5184','7417','7018'].map(c=>`<button class="pill ${UI.cd===c?'on':''}" data-cd="${c}">${c==='Todos'?'Todos los CD':'CD '+c}</button>`).join('')}</div>`;
+  return `<div class="app">
+    <aside class="side" id="side">
+      <div class="brand"><span class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#041E42" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      <div><div style="font-weight:800;font-size:16px">${esc(CFG.appName)}</div><div style="font-size:11px;color:#A9B8D3">Administrador</div></div></div>
+      ${navHtml}
+      <a class="me" href="#perfil"><span class="av">AP</span><span><div style="font-weight:600;font-size:13px">Admin principal</div><div style="font-size:11px;color:#A9B8D3">Todos los CD</div></span></a>
+    </aside>
+    <main class="main">
+      <div class="top">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <button class="btn burger" id="burger" aria-label="Abrir menú">${I.menu}</button>
+          <div>${opts.crumb?`<div class="crumb">${opts.crumb}</div>`:''}<h1>${title}</h1><div class="sub">${sub}</div></div>
+        </div>
+        ${opts.actions || filter}
+      </div>
+      ${body}
+    </main></div>`;
+}
+
+/* ===================== PANTALLAS ===================== */
+function vLogin(){
+  return `<div class="login"><div class="box">
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:44px;height:44px;border-radius:12px;background:#FFC220;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#041E42" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+    <div><div style="font-size:20px;font-weight:800">${esc(CFG.appName)}</div><div style="font-size:13px;color:#5A6880">Control de entrada y salida · Seguridad</div></div></div>
+    <button class="btn" style="height:48px;justify-content:center;background:#fff;color:#041E42;border-color:#D5DDE8" data-act="login">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      Continuar con Google</button>
+    <div style="display:flex;align-items:center;gap:10px;color:#5A6880;font-size:12px"><span style="flex:1;height:1px;background:#E2E7EF"></span>o con tu correo<span style="flex:1;height:1px;background:#E2E7EF"></span></div>
+    <label class="field" style="color:#041E42">Correo<input type="email" value="admin.cd@gmail.com" style="background:#fff;border-color:#D5DDE8;color:#041E42"></label>
+    <label class="field" style="color:#041E42">Contraseña<input type="password" value="12345678" style="background:#fff;border-color:#D5DDE8;color:#041E42"></label>
+    <button class="btn pri" style="height:48px;justify-content:center" data-act="login">Entrar</button>
+    <div style="font-size:13px;color:#5A6880;text-align:center">¿No tienes cuenta? <a href="#login" data-act="noop">Regístrate</a> · tu cuenta queda pendiente hasta que un admin la apruebe.</div>
+  </div></div>`;
+}
+
+function vResumen(){
+  const cds = CDS.filter(c=>inCd(c.code));
+  const onDuty = cds.reduce((a,c)=>a+c.onDuty,0);
+  const marks = JORN.filter(j=>j.date===TODAY&&inCd(u(j.uid).cd)).reduce((a,j)=>a+1+(j.out?1:0),0);
+  const pend = USERS.filter(x=>x.status==='Pendiente'&&inCd(x.cd)).length;
+  const al = ALERTS.filter(a=>a.state==='abierta'&&inCd(u(a.uid).cd));
+  const recent = JORN.filter(j=>j.date===TODAY&&inCd(u(j.uid).cd)).slice(0,6);
+  return shell('resumen','Resumen general','Martes 10 de noviembre de 2026 · datos de ejemplo',`
+  <div class="grid k4">
+    <a class="card kpi" href="#asistencia" style="text-decoration:none;color:inherit"><div class="l">En turno ahora</div><div class="v">${onDuty}</div><div class="n">entradas sin salida</div></a>
+    <a class="card kpi" href="#asistencia" style="text-decoration:none;color:inherit"><div class="l">Marcaciones hoy</div><div class="v">${marks}</div><div class="n">GPS y QR</div></a>
+    <a class="card kpi" href="#usuarios" style="text-decoration:none;color:inherit"><div class="l">Registros por aprobar</div><div class="v">${pend}</div><div class="n">cuentas nuevas</div></a>
+    <a class="card kpi" href="#alertas" style="text-decoration:none;color:inherit;background:var(--warn-bg);color:var(--warn)"><div class="l" style="color:inherit">Alertas abiertas</div><div class="v">${al.length}</div><div class="n" style="color:inherit">revisar hoy</div></a>
+  </div>
+  <div class="row" style="margin-top:16px">
+    <section class="card"><h2>Guardias en turno por CD</h2>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">${cds.map(c=>`
+        <a href="#cd-${c.code}" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between"><b>${c.name} ${c.code}</b><span class="muted">${c.onDuty} de ${c.guards}</span></div>
+          <div class="bar"><div style="width:${Math.round(c.onDuty/c.guards*100)}%"></div></div></a>`).join('')}</div>
+    </section>
+    <section class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Alertas abiertas</h2><a href="#alertas" class="btn sm" style="border:0;background:transparent;color:var(--blue)">Ver todas</a></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${al.length?al.map(a=>`
+        <a href="#alerta-${a.id}" style="text-decoration:none;color:inherit;display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;border:1px solid var(--border)">
+          <span class="chip ${SEV[a.sev]}">${a.sev}</span><span style="flex:1"><b>${full(u(a.uid))}</b> · ${cdName(u(a.uid).cd)}<br><span class="muted" style="font-size:12px">${a.text}</span></span></a>`).join(''):'<span class="muted">Sin alertas abiertas.</span>'}</div>
+    </section>
+  </div>
+  <section class="card" style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Jornadas de hoy</h2><a href="#asistencia" class="btn sm" style="border:0;background:transparent;color:var(--blue)">Ver registros</a></div>
+    <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Guardia</th><th>CD</th><th>Turno</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr></thead><tbody>
+    ${recent.map(j=>{const s=jStatus(j);return `<tr class="click" data-go="guardia-${j.uid}"><td><b>${full(u(j.uid))}</b></td><td>${cdName(u(j.uid).cd)}</td><td>${j.shift}</td><td><b>${j.in.t}</b></td><td><b>${j.out?j.out.t:'—'}</b></td><td><span class="chip ${s[1]}">${s[0]}</span></td></tr>`;}).join('')}
+    </tbody></table></div></section>`);
+}
+
+function jornRows(list, showName){
+  const days = [...new Set(list.map(j=>j.date))];
+  const cols = showName ? 8 : 6;
+  return days.map(d=>`<tr class="daysep"><td colspan="${cols}">${d===TODAY?'Hoy · ':d==='09/11'?'Ayer · ':''}${d}/2026 · ${list.filter(j=>j.date===d).length} jornadas</td></tr>`+
+    list.filter(j=>j.date===d).map(j=>{const g=u(j.uid),s=jStatus(j);return `<tr>
+      ${showName?`<td><a href="#guardia-${g.id}" style="font-weight:700;text-decoration:none">${full(g)}</a><div class="muted" style="font-size:12px">${cdName(g.cd)}</div></td>`:''}
+      <td>${j.shift}</td>
+      <td>${cellTime(j,'in')}</td>
+      <td>${cellTime(j,'out')}</td>
+      <td style="font-variant-numeric:tabular-nums">${hours(j)||'<span class="muted">—</span>'}</td>
+      <td><span class="chip ${s[1]}">${s[0]}</span>${j.edited?' <span class="chip c-warn" style="font-size:11px">editada</span>':''}</td>
+      <td><button class="btn sm out" data-jedit="${j.id}" data-focus="in">Editar jornada</button></td>
+      ${showName?'<td></td>':''}</tr>`;}).join('')).join('');
+}
+function vAsistencia(){
+  const range = {Hoy:[TODAY],Ayer:['09/11'],'Esta semana':null}[UI.assistDate];
+  let rows = JORN.filter(j=>inCd(u(j.uid).cd) && (!range||range.includes(j.date)));
+  if(UI.q) rows = rows.filter(j=>full(u(j.uid)).toLowerCase().includes(UI.q.toLowerCase()));
+  if(UI.onlyIssues) rows = rows.filter(hasIssue);
+  const issues = JORN.filter(j=>inCd(u(j.uid).cd)&&hasIssue(j)).length;
+  return shell('asistencia','Registros de asistencia','Una fila por jornada: entrada y salida juntas. Toca una hora para corregirla.',`
+  <section class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
+      <div class="tabs">${['Hoy','Ayer','Esta semana'].map(d=>`<button class="tab ${UI.assistDate===d?'on':''}" data-date="${d}">${d}</button>`).join('')}</div>
+      <input type="search" id="q" value="${esc(UI.q)}" placeholder="Buscar guardia" aria-label="Buscar guardia" style="height:40px;width:200px;border-radius:10px;border:1px solid var(--border);background:var(--card);padding:0 12px">
+      <button class="pill ${UI.onlyIssues?'on':''}" data-issues="1">Solo con pendientes (${issues})</button>
+      <span style="flex:1"></span><span class="muted" style="font-size:12px">Toda corrección pide motivo y queda en la bitácora</span>
+    </div>
+    <div class="legend" style="margin-bottom:10px"><span><b style="background:#1FA463;border-radius:4px"></b>Dentro del radio</span><span><b style="background:#E0A100;border-radius:4px"></b>Observación (150 m – 1 km)</span><span><b style="background:#D93A26;border-radius:4px"></b>Fuera de 1 km</span><span><b style="background:#0071CE;border-radius:4px"></b>Sin conexión</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Guardia</th><th>Turno</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Estado</th><th></th><th></th></tr></thead><tbody>
+    ${rows.length?jornRows(rows,true):'<tr><td colspan="8" class="muted">No hay jornadas con ese filtro.</td></tr>'}
+    </tbody></table></div>
+  </section>`);
+}
+function editJornada(id, focus){
+  const j = JORN.find(x=>x.id===id), g = u(j.uid);
+  openModal(`<h2 style="font-size:18px">Corregir jornada</h2>
+    <div class="muted">${full(g)} · ${cdName(g.cd)} · ${j.date}/2026 · turno ${j.shift.toLowerCase()}</div>
+    <div class="tpair">
+      <div class="tbox ${focus==='in'?'focus':''}"><b>Entrada</b><input type="time" id="jin" value="${j.in.t}" aria-label="Hora de entrada"><span class="muted" style="font-size:12px">Original: ${j.in.t} · ${j.in.m}</span></div>
+      <div class="tbox ${focus==='out'?'focus':''}"><b>Salida</b><input type="time" id="jout" value="${j.out?j.out.t:''}" aria-label="Hora de salida"><span class="muted" style="font-size:12px">${j.out?'Original: '+j.out.t+' · '+j.out.m:'No marcó salida'}</span></div>
+    </div>
+    <div class="muted" style="font-size:13px">Horas de la jornada: <b id="jh" style="color:var(--text)">${hours(j)||'—'}</b></div>
+    <label class="field">Motivo (obligatorio)<textarea id="jreason" rows="3" placeholder="Ej.: olvidó marcar salida, verificado con hoja de papel"></textarea></label>
+    <div class="pills" aria-label="Motivos rápidos">${['Olvidó marcar','Falla de GPS','Sin internet','Verificado con hoja de papel'].map(r=>`<button class="pill" data-reason="${r}">${r}</button>`).join('')}</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-act="close">Cancelar</button><button class="btn pri" data-act="savejorn" data-id="${j.id}">Guardar jornada</button></div>`);
+  setTimeout(()=>{ const el=$(focus==='out'?'#jout':'#jin'); if(el) el.focus(); },50);
+}
+
+function calendar(uid){
+  const pattern = ['ok','ok','ok','ok','ok','off','off','ok','obs','ok','ok','ok','off','off','ok','ok','late','ok','ok','off','off','ok','ok','ok','ok','ok','off','off','ok','ok'];
+  const colors = {ok:'var(--ok-bg)',obs:'var(--warn-bg)',late:'var(--bad-bg)',off:'var(--track)',fut:'transparent'};
+  const tc = {ok:'var(--ok)',obs:'var(--warn)',late:'var(--bad)',off:'var(--muted)',fut:'var(--muted)'};
+  let cells = '';
+  for(let i=0;i<6;i++) cells += '<div></div>'; // nov 2026 empieza domingo -> offset con L-D? usamos D..S
+  cells='';
+  // Noviembre 2026 inicia en domingo
+  for(let d=1; d<=30; d++){ const s = d>10?'fut':pattern[(d+uid)%pattern.length]; cells += `<div class="d" style="background:${colors[s]};color:${tc[s]};${s==='fut'?'border:1px dashed var(--border)':''}">${d}</div>`; }
+  return `<div class="cal" style="margin-bottom:6px">${['D','L','M','M','J','V','S'].map(x=>`<div class="muted" style="text-align:center;font-size:11px;font-weight:700">${x}</div>`).join('')}</div><div class="cal">${cells}</div>
+  <div class="legend" style="margin-top:10px"><span><b style="background:var(--ok-bg)"></b>A tiempo</span><span><b style="background:var(--warn-bg)"></b>Con observación</span><span><b style="background:var(--bad-bg)"></b>Tardanza / sin salida</span><span><b style="background:var(--track)"></b>Libre</span></div>`;
+}
+
+function vGuardia(id){
+  const g = u(id); if(!g) return vNotFound();
+  const ms = JORN.filter(j=>j.uid===id);
+  return shell('asistencia',full(g),`${g.role} · ${cdName(g.cd)} · registrado el ${g.created}`,`
+  <div class="row">
+    <section class="card" style="flex:1 1 300px;max-width:420px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:14px;align-items:center"><span class="av" style="width:56px;height:56px;border-radius:16px;font-size:20px">${ini(g)}</span>
+        <div><div style="font-size:18px;font-weight:800">${full(g)}</div><div class="muted">${g.email}</div></div></div>
+      <div class="pills"><span class="chip ${ROLE[g.role]}">${g.role}</span><span class="chip ${USTAT[g.status]}">${g.status}</span><span class="chip c-info">Acceso: ${g.via}</span></div>
+      <div><div class="muted" style="font-size:12px;font-weight:600;margin-bottom:6px">Firma</div>${g.sig?`<div class="sig" style="font-family:'${g.sig.font}',cursive">${full(g)}</div><div class="muted" style="font-size:12px;margin-top:6px">Firmada el ${g.sig.date}</div>`:'<span class="muted">Aún no registra firma</span>'}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button class="btn sm out" data-uedit="${g.id}">Editar datos</button>
+        ${g.status==='Pendiente'?`<button class="btn sm ok" data-approve="${g.id}">Aprobar</button>`:`<button class="btn sm danger" data-block="${g.id}">${g.status==='Bloqueado'?'Desbloquear':'Bloquear'}</button>`}
+        ${g.sig&&g.sig.locked?`<button class="btn sm" data-unlock="${g.id}">Habilitar cambio de firma</button>`:''}
+      </div>
+    </section>
+    <section class="card" style="flex:1 1 320px"><h2>Noviembre 2026</h2><div class="muted" style="font-size:12px;margin:4px 0 12px">Resumen visual del mes (ejemplo)</div>${calendar(id)}
+      <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px">
+        <div style="background:var(--track);border-radius:12px;padding:12px"><div class="muted" style="font-size:12px">Días trabajados</div><div style="font-size:22px;font-weight:800">7</div></div>
+        <div style="background:var(--track);border-radius:12px;padding:12px"><div class="muted" style="font-size:12px">Tardanzas</div><div style="font-size:22px;font-weight:800">1</div></div>
+        <div style="background:var(--track);border-radius:12px;padding:12px"><div class="muted" style="font-size:12px">Alertas</div><div style="font-size:22px;font-weight:800">${ALERTS.filter(a=>a.uid===id).length}</div></div>
+      </div>
+    </section>
+  </div>
+  <section class="card" style="margin-top:16px"><h2>Jornadas</h2><div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Turno</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${ms.length?jornRows(ms,false):'<tr><td colspan="6" class="muted">Sin jornadas en el periodo.</td></tr>'}
+  </tbody></table></div></section>`,{crumb:'<a href="#asistencia">Registros de asistencia</a> / Detalle del guardia',actions:`<a class="btn" href="#asistencia">${I.back}Volver</a>`});
+}
+
+function vUsuarios(){
+  const list = USERS.filter(x=>inCd(x.cd));
+  const rows = list.filter(x=>x.status===UI.userTab);
+  return shell('usuarios','Usuarios','Aprobar registros, roles, CD asignado y bloqueo',`
+  <section class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="tabs">${[['Pendiente','Pendientes'],['Activo','Activos'],['Bloqueado','Bloqueados']].map(([k,l])=>`<button class="tab ${UI.userTab===k?'on':''}" data-utab="${k}">${l} (${list.filter(x=>x.status===k).length})</button>`).join('')}</div>
+      <a class="btn pri" href="#nuevo-usuario">+ Nuevo usuario</a>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>CD</th><th>Acceso</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+    ${rows.length?rows.map(x=>`<tr><td><a href="#guardia-${x.id}" style="font-weight:700;text-decoration:none">${full(x)}</a></td><td class="muted">${x.email}</td><td><span class="chip ${ROLE[x.role]}">${x.role}</span></td><td>${cdName(x.cd)}</td><td>${x.via}</td><td><span class="chip ${USTAT[x.status]}">${x.status}</span></td>
+      <td><div style="display:flex;gap:6px">${x.status==='Pendiente'?`<button class="btn sm ok" data-approve="${x.id}">Aprobar</button><button class="btn sm danger" data-reject="${x.id}">Rechazar</button>`:`<button class="btn sm" data-uedit="${x.id}">Editar</button><button class="btn sm danger" data-block="${x.id}">${x.status==='Bloqueado'?'Desbloquear':'Bloquear'}</button>`}
+      <button class="btn sm" data-del="${x.id}" aria-label="Eliminar">✕</button></div></td></tr>`).join(''):`<tr><td colspan="7" class="muted">No hay usuarios en esta pestaña.</td></tr>`}
+    </tbody></table></div>
+  </section>`);
+}
+
+function userForm(x){
+  const isNew = !x; x = x || {first:'',last:'',email:'',role:'Seguridad',cd:'5184',status:'Activo'};
+  return shell('usuarios',isNew?'Nuevo usuario':'Editar usuario',isNew?'El usuario recibirá un correo para crear su contraseña':full(x),`
+  <form class="card" id="uform" style="max-width:640px;display:flex;flex-direction:column;gap:14px" data-id="${isNew?'':x.id}">
+    <div class="f2"><label class="field">Nombre<input name="first" required value="${esc(x.first)}" placeholder="Ej.: Karla"></label><label class="field">Apellidos<input name="last" required value="${esc(x.last)}" placeholder="Ej.: Morales"></label></div>
+    <label class="field">Correo<input name="email" type="email" required value="${esc(x.email)}" placeholder="correo@gmail.com"></label>
+    <div class="f2">
+      <label class="field">Rol<select name="role">${['Seguridad','PA','Kiosco QR','Admin'].map(r=>`<option ${x.role===r?'selected':''}>${r}</option>`).join('')}</select></label>
+      <label class="field">Centro de distribución<select name="cd">${CDS.map(c=>`<option value="${c.code}" ${x.cd===c.code?'selected':''}>${c.name} ${c.code}</option>`).join('')}</select></label>
+    </div>
+    <div style="background:var(--track);border-radius:12px;padding:12px;font-size:13px" class="muted"><b style="color:var(--text)">Permisos del rol:</b> Seguridad marca entrada/salida y firma · PA ve solo su CD, reportes y alertas · Kiosco QR solo muestra el código · Admin controla todo.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><a class="btn" href="#usuarios">Cancelar</a><button class="btn pri" type="submit">${isNew?'Crear usuario':'Guardar cambios'}</button></div>
+  </form>`,{crumb:'<a href="#usuarios">Usuarios</a> / '+(isNew?'Nuevo':'Editar'),actions:`<a class="btn" href="#usuarios">${I.back}Volver</a>`});
+}
+
+function vCds(){
+  return shell('cds','Centros de distribución','Geocerca de 150 m, alerta a más de 1 km y turnos por CD',`
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><a class="btn pri" href="#nuevo-cd">+ Agregar CD</a></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">${CDS.filter(c=>inCd(c.code)).map(c=>`
+    <a class="card" href="#cd-${c.code}" style="text-decoration:none;color:inherit;padding:0;overflow:hidden;display:flex;flex-direction:column">
+      ${mapSvg(c,null,140)}
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:17px">${c.name}</b><span class="muted">Código ${c.code}</span></div>
+        <div class="pills">${SHIFTS.map(s=>`<span class="chip ${s.cls}">${s.name}</span>`).join('')}</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span>PA: ${c.pa}</span><span class="muted">${c.guards} guardias</span></div>
+      </div></a>`).join('')}</div>`);
+}
+
+function mapSvg(c, pointDist, h){
+  // mapa estilizado: calles, anillo de 150 m y de 1 km
+  const p = pointDist ? (pointDist>=1000? {x:520,y:40}: pointDist>150?{x:350,y:70}:{x:322,y:108}) : null;
+  return `<svg viewBox="0 0 600 ${h||220}" width="100%" height="${h||220}" role="img" aria-label="Mapa de la geocerca de ${c.name}" style="display:block;background:#DDE8F5">
+    <path d="M0 60 L600 90 M0 170 L600 140 M140 0 L180 ${h||220} M420 0 L390 ${h||220} M250 0 L260 ${h||220}" stroke="#FFFFFF" stroke-width="10" fill="none"/>
+    <path d="M0 60 L600 90 M0 170 L600 140" stroke="#C7D6EA" stroke-width="1" fill="none"/>
+    <circle cx="320" cy="${(h||220)/2}" r="${(h||220)*0.45}" fill="none" stroke="#C0392B" stroke-width="2" stroke-dasharray="6 6" opacity=".7"/>
+    <circle cx="320" cy="${(h||220)/2}" r="${(h||220)*0.18}" fill="rgba(0,113,206,.18)" stroke="#0071CE" stroke-width="2"/>
+    <rect x="304" y="${(h||220)/2-14}" width="32" height="28" rx="4" fill="#041E42"/>
+    <circle cx="320" cy="${(h||220)/2}" r="5" fill="#FFC220"/>
+    <text x="320" y="${(h||220)/2+(h||220)*0.18+14}" text-anchor="middle" font-size="11" font-weight="700" fill="#004F9A">150 m</text>
+    <text x="${320+(h||220)*0.45+6}" y="${(h||220)/2}" font-size="11" font-weight="700" fill="#9B1C10">1 km</text>
+    ${p?`<circle cx="${p.x}" cy="${p.y}" r="9" fill="#D93A26" stroke="#fff" stroke-width="3"/><text x="${p.x+14}" y="${p.y+4}" font-size="12" font-weight="800" fill="#041E42">Marca</text>`:''}
+    <text x="10" y="${(h||220)-10}" font-size="11" font-weight="600" fill="#041E42">${c.lat}, ${c.lng}</text>
+  </svg>`;
+}
+
+function vCd(code){
+  const c = CDS.find(x=>x.code===code); if(!c) return vNotFound();
+  const guards = USERS.filter(x=>x.cd===code&&x.role==='Seguridad');
+  return shell('cds',`${c.name} · ${c.code}`,'Geocerca, turnos, PA asignado y kiosco',`
+  <div class="row">
+    <section class="card" style="padding:0;overflow:hidden;flex:2 1 420px">${mapSvg(c,null,300)}
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div class="f2"><label class="field">Latitud<input value="${c.lat}"></label><label class="field">Longitud<input value="${c.lng}"></label></div>
+        <label class="field">Radio de marca válida: <span id="rv">${c.radius} m</span><input type="range" min="50" max="500" step="10" value="${c.radius}" id="radius" style="height:auto;padding:0"></label>
+        <div class="muted" style="font-size:12px">Entre el radio y 1 km la marca queda con observación. A más de 1 km se envía alerta a PA y admin.</div>
+      </div></section>
+    <section class="card" style="flex:1 1 300px;display:flex;flex-direction:column;gap:14px">
+      <h2>Turnos del CD</h2>
+      ${SHIFTS.map(s=>`<div style="display:flex;align-items:center;gap:10px"><span class="chip ${s.cls}" style="width:96px;text-align:center">${s.name}</span><input type="time" aria-label="Inicio ${s.name}" style="height:38px;border-radius:9px;border:1px solid var(--border);background:var(--card);padding:0 8px"><span class="muted">a</span><input type="time" aria-label="Fin ${s.name}" style="height:38px;border-radius:9px;border:1px solid var(--border);background:var(--card);padding:0 8px"></div>`).join('')}
+      <div class="muted" style="font-size:12px">El guardia elige su turno al marcar y el rango se toma de aquí.</div>
+      <label class="field">PA asignado<select>${USERS.filter(x=>x.role==='PA').map(x=>`<option ${c.pa===full(x)?'selected':''}>${full(x)}</option>`).join('')}<option ${c.pa==='Sin asignar'?'selected':''}>Sin asignar</option></select></label>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span><b>Kiosco QR</b><br><span class="muted" style="font-size:12px">${c.qr?'Habilitado · cambia cada '+c.rot+' s':'Deshabilitado'}</span></span><a class="btn sm out" href="#qr">Configurar</a></div>
+      <button class="btn pri" data-act="savecd" style="justify-content:center">Guardar cambios</button>
+    </section>
+  </div>
+  <section class="card" style="margin-top:16px"><h2>Guardias de este CD (${guards.length})</h2><div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Nombre</th><th>Estado</th><th>Firma</th><th></th></tr></thead><tbody>
+  ${guards.map(x=>`<tr class="click" data-go="guardia-${x.id}"><td><b>${full(x)}</b></td><td><span class="chip ${USTAT[x.status]}">${x.status}</span></td><td>${x.sig?'Registrada':'<span class="muted">Pendiente</span>'}</td><td style="text-align:right"><span class="muted">Ver ›</span></td></tr>`).join('')}
+  </tbody></table></div></section>`,{crumb:'<a href="#cds">Centros de distribución</a> / Detalle',actions:`<a class="btn" href="#cds">${I.back}Volver</a>`});
+}
+
+function vNuevoCd(){
+  return shell('cds','Agregar centro de distribución','El punto del mapa define la geocerca',`
+  <form class="card" id="cdform" style="max-width:720px;display:flex;flex-direction:column;gap:14px">
+    <div class="f2"><label class="field">Nombre<input name="name" required placeholder="Ej.: Lourdes"></label><label class="field">Código<input name="code" required placeholder="Ej.: 7xxx"></label></div>
+    <div style="border-radius:12px;overflow:hidden;border:1px solid var(--border)">${mapSvg({name:'nuevo CD',lat:'[latitud]',lng:'[longitud]'},null,220)}</div>
+    <div class="muted" style="font-size:12px">En la app real: toca el mapa o usa "Mi ubicación actual" estando en el CD.</div>
+    <div class="f2"><label class="field">Radio válido (m)<input type="number" value="150"></label><label class="field">Alerta a partir de (m)<input type="number" value="1000"></label></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><a class="btn" href="#cds">Cancelar</a><button class="btn pri" type="submit">Crear CD</button></div>
+  </form>`,{crumb:'<a href="#cds">Centros de distribución</a> / Nuevo',actions:`<a class="btn" href="#cds">${I.back}Volver</a>`});
+}
+
+function vAlertas(){
+  const list = ALERTS.filter(a=>inCd(u(a.uid).cd));
+  return shell('alertas','Alertas','Marcas fuera del radio o hechas sin conexión',`
+  <section class="card" style="display:flex;flex-direction:column;gap:10px">${list.map(a=>`
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:14px;border-radius:12px;border:1px solid var(--border)">
+      <span class="chip ${SEV[a.sev]}">${a.sev}</span>
+      <a href="#alerta-${a.id}" style="flex:1 1 260px;text-decoration:none;color:inherit"><b>${full(u(a.uid))}</b> · ${cdName(u(a.uid).cd)}<br><span class="muted" style="font-size:13px">${a.text} · ${a.time}</span></a>
+      ${a.state==='abierta'?`<div style="display:flex;gap:6px"><a class="btn sm out" href="#alerta-${a.id}">Ver en mapa</a><button class="btn sm ok" data-accept="${a.id}">Aceptar</button><button class="btn sm danger" data-rejecta="${a.id}">Rechazar</button></div>`:`<span class="chip ${a.state==='aceptada'?'c-ok':'c-bad'}">${a.state==='aceptada'?'Marca aceptada':'Marca rechazada'}</span>`}
+    </div>`).join('')}</section>`);
+}
+
+function vAlerta(id){
+  const a = ALERTS.find(x=>x.id===id); if(!a) return vNotFound();
+  const g = u(a.uid), c = CDS.find(x=>x.code===g.cd), j = JORN.find(x=>x.id===a.jid);
+  const p = j ? j[a.part] : null;
+  const m = j ? {kind:(a.part==='in'?'Entrada':'Salida'), shift:j.shift, date:j.date, time:p?p.t:'sin marcar'} : null;
+  return shell('alertas',`Alerta ${a.sev.toLowerCase()} · ${full(g)}`,a.text,`
+  <div class="row">
+    <section class="card" style="padding:0;overflow:hidden;flex:2 1 420px">${mapSvg(c,a.dist,320)}</section>
+    <section class="card" style="flex:1 1 300px;display:flex;flex-direction:column;gap:12px">
+      <h2>Detalle de la marca</h2>
+      <table><tbody>
+        <tr><td class="muted">Guardia</td><td><a href="#guardia-${g.id}"><b>${full(g)}</b></a></td></tr>
+        <tr><td class="muted">CD</td><td>${cdName(g.cd)}</td></tr>
+        <tr><td class="muted">Tipo</td><td>${m?m.kind+' · '+m.shift:'—'}</td></tr>
+        <tr><td class="muted">Hora</td><td><b>${m?m.date+' '+m.time:a.time}</b></td></tr>
+        <tr><td class="muted">Distancia al CD</td><td><b>${a.dist>=1000?(a.dist/1000).toFixed(1)+' km':a.dist+' m'}</b></td></tr>
+        <tr><td class="muted">Precisión GPS</td><td>± 18 m</td></tr>
+        <tr><td class="muted">Dispositivo</td><td>El registrado del usuario</td></tr>
+      </tbody></table>
+      ${j?`<button class="btn out" data-jedit="${j.id}" data-focus="${a.part}" style="justify-content:center">Corregir esta jornada</button>`:''}
+      <label class="field">Comentario (opcional)<textarea rows="3" placeholder="Ej.: se confirmó con la hoja de papel"></textarea></label>
+      ${a.state==='abierta'?`<div style="display:flex;gap:8px"><button class="btn ok" data-accept="${a.id}" style="flex:1;justify-content:center">Aceptar marca</button><button class="btn danger" data-rejecta="${a.id}" style="flex:1;justify-content:center">Rechazar</button></div>`:`<span class="chip ${a.state==='aceptada'?'c-ok':'c-bad'}" style="align-self:flex-start">${a.state==='aceptada'?'Marca aceptada':'Marca rechazada'}</span>`}
+    </section>
+  </div>`,{crumb:'<a href="#alertas">Alertas</a> / Detalle',actions:`<a class="btn" href="#alertas">${I.back}Volver</a>`});
+}
+
+function vReportes(){
+  return shell('reportes','Reportes','Excel o PDF por guardia, CD y rango de fechas',`
+  <div class="row">
+    <form class="card" id="rform" style="display:flex;flex-direction:column;gap:14px">
+      <h2>Generar reporte</h2>
+      <label class="field">Tipo<select name="tipo"><option>Asistencia por guardia</option><option>Asistencia por CD</option><option>Tardanzas y salidas sin marcar</option><option>Alertas de ubicación</option><option>Bitácora de ediciones</option></select></label>
+      <div class="f2"><label class="field">CD<select name="cd"><option>Todos</option>${CDS.map(c=>`<option>${c.name} ${c.code}</option>`).join('')}</select></label>
+      <label class="field">Guardia<select name="g"><option>Todos</option>${USERS.filter(x=>x.role==='Seguridad').map(x=>`<option>${full(x)}</option>`).join('')}</select></label></div>
+      <div class="f2"><label class="field">Desde<input type="date" value="2026-11-01"></label><label class="field">Hasta<input type="date" value="2026-11-15"></label></div>
+      <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" checked style="width:18px;height:18px">Incluir firma de cada guardia</label>
+      <div style="display:flex;gap:8px"><button class="btn pri" type="submit" name="fmt" value="Excel" style="flex:1;justify-content:center">${I.dl} Excel</button><button class="btn out" type="submit" name="fmt" value="PDF" style="flex:1;justify-content:center">${I.dl} PDF</button></div>
+    </form>
+    <section class="card" style="display:flex;flex-direction:column;gap:10px"><h2>Vista previa</h2>
+      <div class="tbl-wrap" style="border:1px solid var(--border);border-radius:10px"><table style="font-size:12px"><thead><tr style="background:var(--blue)"><th style="color:#fff">Fecha</th><th style="color:#fff">Guardia</th><th style="color:#fff">Turno</th><th style="color:#fff">Entrada</th><th style="color:#fff">Salida</th><th style="color:#fff">Firma</th></tr></thead><tbody>
+        <tr><td>09/11</td><td>Carlos Méndez</td><td>Vespertino</td><td>13:57</td><td>22:03</td><td style="font-family:'Great Vibes',cursive;font-size:18px">Carlos Méndez</td></tr>
+        <tr><td>09/11</td><td>Ana Rivas</td><td>Vespertino</td><td>13:50</td><td>22:01</td><td style="font-family:'Dancing Script',cursive;font-size:15px">Ana Rivas</td></tr>
+        <tr><td>10/11</td><td>Sofía Guzmán</td><td>Diurno</td><td>05:51</td><td>—</td><td style="font-family:'Great Vibes',cursive;font-size:18px">Sofía Guzmán</td></tr>
+      </tbody></table></div>
+      <span class="muted" style="font-size:12px">Mismo orden de columnas que la hoja de papel.</span>
+    </section>
+  </div>
+  <section class="card" style="margin-top:16px"><h2>Reportes generados</h2><div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Reporte</th><th>Rango</th><th>Formato</th><th>Generado por</th><th>Fecha</th><th></th></tr></thead><tbody>
+  ${REPORTS.map(r=>`<tr><td><b>${r.name}</b></td><td>${r.range}</td><td><span class="chip ${r.fmt==='Excel'?'c-ok':'c-bad'}">${r.fmt}</span></td><td>${r.by}</td><td>${r.when}</td><td><button class="btn sm out" data-act="dl">${I.dl}Descargar</button></td></tr>`).join('')}
+  </tbody></table></div></section>`,{noFilter:true});
+}
+
+function fakeQr(seed){
+  let s=seed,cells='';const n=21;const rnd=()=>{s=(s*9301+49297)%233280;return s/233280;};
+  const fin=(r,c,r0,c0)=>{const y=r-r0,x=c-c0;if(y<0||x<0||y>6||x>6)return null;return y===0||y===6||x===0||x===6||(y>=2&&y<=4&&x>=2&&x<=4);};
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){let f=fin(r,c,0,0);if(f===null)f=fin(r,c,0,n-7);if(f===null)f=fin(r,c,n-7,0);const on=f!==null?f:rnd()>.5;if(on)cells+=`<rect x="${c}" y="${r}" width="1" height="1"/>`;}
+  return `<svg viewBox="-1 -1 23 23" width="150" height="150" role="img" aria-label="QR de ejemplo" style="background:#fff;border-radius:8px"><g fill="#041E42">${cells}</g></svg>`;
+}
+function vQr(){
+  return shell('qr','Kiosco QR','Código dinámico en el teléfono fijo de cada garita (método secundario)',`
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">${CDS.filter(c=>inCd(c.code)).map(c=>`
+    <section class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">${c.name} ${c.code}</b><button class="switch ${c.qr?'on':''}" role="switch" aria-checked="${c.qr}" aria-label="Habilitar QR" data-qr="${c.code}"></button></div>
+      <div style="display:flex;justify-content:center;padding:8px;opacity:${c.qr?1:.3}">${fakeQr(Number(c.code))}</div>
+      <span class="muted" style="font-size:13px;text-align:center">${c.qr?'Habilitado · el kiosco muestra el código':'Deshabilitado · solo GPS'}</span>
+      <div><div class="muted" style="font-size:12px;font-weight:600;margin-bottom:6px">El código cambia cada</div><div class="pills">${[15,30,60].map(s=>`<button class="pill ${c.rot===s?'on':''}" data-rot="${c.code}:${s}">${s} s</button>`).join('')}</div></div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:10px;font-size:13px"><span>Cuenta kiosco</span><b>${c.kiosk||'<span class="muted">Sin cuenta</span>'}</b></div>
+    </section>`).join('')}</div>`);
+}
+
+function vFirmas(){
+  const list = USERS.filter(x=>x.sig&&inCd(x.cd));
+  return shell('firmas','Firmas','Solo lectura. El admin puede habilitar un cambio antes de los '+CFG.sigDays+' días.',`
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">${list.map(x=>`
+    <section class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div class="sig" style="font-family:'${x.sig.font}',cursive">${full(x)}</div>
+      <div style="display:flex;justify-content:space-between"><a href="#guardia-${x.id}" style="font-weight:700;text-decoration:none">${full(x)}</a><span class="muted">${cdName(x.cd)}</span></div>
+      <span class="muted" style="font-size:12px">${x.sig.locked?'Firmada el '+x.sig.date+' · bloqueada por '+CFG.sigDays+' días':'Cambio habilitado · el usuario fue notificado'}</span>
+      ${x.sig.locked?`<button class="btn sm out" data-unlock="${x.id}" style="justify-content:center">Habilitar cambio ahora</button>`:`<button class="btn sm" disabled style="justify-content:center;opacity:.6">Cambio habilitado</button>`}
+    </section>`).join('')}</div>`);
+}
+
+function vBitacora(){
+  return shell('bitacora','Bitácora','Todo cambio hecho por un admin o PA queda registrado',`
+  <section class="card">${LOG.map(l=>`<div style="display:flex;gap:16px;padding:12px 4px;border-bottom:1px solid var(--border)"><span class="muted" style="width:96px;flex-shrink:0;font-variant-numeric:tabular-nums">${l.when}</span><div><b>${esc(l.action)}</b><div class="muted" style="font-size:12px">${l.who}</div></div></div>`).join('')}</section>`,{noFilter:true});
+}
+
+function vConfig(){
+  return shell('config','Configuración','Retención de datos, apariencia y administradores',`
+  <div class="row">
+    <section class="card" style="display:flex;flex-direction:column;gap:12px"><h2>Retención de datos</h2>
+      <span class="muted">Las marcaciones más antiguas se borran por completo cada noche (tarea automática gratuita).</span>
+      <div class="pills">${[30,60,90,120,180].map(d=>`<button class="pill ${CFG.retention===d?'on':''}" data-ret="${d}">${d} días</button>`).join('')}</div>
+      <b>Se conservan ${CFG.retention} días · próximo borrado: hoy 23:00</b>
+      <div><div class="muted" style="font-size:12px;margin-bottom:6px">Uso del plan gratis de Firestore</div><div class="bar"><div style="width:3%"></div></div><div class="muted" style="font-size:12px;margin-top:4px">≈ 3% de 1 GiB</div></div>
+    </section>
+    <section class="card" style="display:flex;flex-direction:column;gap:12px"><h2>Apariencia</h2>
+      <div class="pills">${[['claro','Claro'],['oscuro','Oscuro'],['auto','Automático']].map(([k,l])=>`<button class="pill ${CFG.theme===k?'on':''}" data-theme="${k}">${l}</button>`).join('')}</div>
+      <label class="field">Nombre de la app<input id="appname" value="${esc(CFG.appName)}"></label>
+      <label class="field">Días para volver a cambiar la firma<input type="number" id="sigdays" value="${CFG.sigDays}" min="1"></label>
+      <button class="btn pri" data-act="savecfg" style="justify-content:center">Guardar</button>
+    </section>
+    <section class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><h2>Administradores</h2><button class="btn sm pri" data-act="addadmin">+ Agregar</button></div>
+      <span class="muted" style="font-size:12px">Todos tienen el mismo nivel que el admin principal.</span>
+      ${ADMINS.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><div><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.email)} · desde ${a.since}</div></div><span class="chip c-navy">Admin</span></div>`).join('')}
+    </section>
+  </div>`,{noFilter:true});
+}
+
+function vPerfil(){
+  return shell('','Mi perfil','Admin principal',`
+  <section class="card" style="max-width:560px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:14px;align-items:center"><span class="av" style="width:56px;height:56px;border-radius:16px;font-size:20px">AP</span><div><b style="font-size:18px">Admin principal</b><div class="muted">admin.cd@gmail.com · Acceso con Google</div></div></div>
+    <div class="f2"><label class="field">Nombre<input value="Admin"></label><label class="field">Apellidos<input value="Principal"></label></div>
+    <div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><button class="btn pri" data-act="saveprof">Guardar</button><button class="btn danger" data-act="logout">Cerrar sesión</button></div>
+  </section>`,{noFilter:true});
+}
+function vNotFound(){return shell('','No encontrado','Esa pantalla no existe',`<a class="btn pri" href="#resumen">Ir al resumen</a>`,{noFilter:true});}
+
+/* ===================== ROUTER ===================== */
+function render(){
+  const h = (location.hash||'').slice(1) || (UI.logged?'resumen':'login');
+  if(!UI.logged && h!=='login'){ UI.logged = true; } // al abrir un enlace directo, entra sin pedir login
+  let html;
+  if(h==='login') html = vLogin();
+  else if(h==='resumen') html = vResumen();
+  else if(h==='asistencia') html = vAsistencia();
+  else if(h.startsWith('guardia-')) html = vGuardia(Number(h.split('-')[1]));
+  else if(h==='usuarios') html = vUsuarios();
+  else if(h==='nuevo-usuario') html = userForm(null);
+  else if(h.startsWith('editar-usuario-')) html = userForm(u(Number(h.split('-')[2])));
+  else if(h==='cds') html = vCds();
+  else if(h==='nuevo-cd') html = vNuevoCd();
+  else if(h.startsWith('cd-')) html = vCd(h.slice(3));
+  else if(h==='alertas') html = vAlertas();
+  else if(h.startsWith('alerta-')) html = vAlerta(Number(h.split('-')[1]));
+  else if(h==='reportes') html = vReportes();
+  else if(h==='qr') html = vQr();
+  else if(h==='firmas') html = vFirmas();
+  else if(h==='bitacora') html = vBitacora();
+  else if(h==='config') html = vConfig();
+  else if(h==='perfil') html = vPerfil();
+  else html = vNotFound();
+  $('#root').innerHTML = html;
+  document.body.classList.toggle('dark', CFG.theme==='oscuro');
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange', render);
+
+/* ===================== EVENTOS ===================== */
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-cd],[data-utab],[data-date],[data-approve],[data-reject],[data-block],[data-del],[data-uedit],[data-unlock],[data-jedit],[data-issues],[data-reason],[data-accept],[data-rejecta],[data-qr],[data-rot],[data-ret],[data-theme],[data-act],[data-go],#burger');
+  if(!t) { if(window.innerWidth<=900 && !e.target.closest('#side')) { const s=$('#side'); if(s) s.classList.remove('open'); } return; }
+  const d = t.dataset;
+  if(t.id==='burger'){ $('#side').classList.toggle('open'); return; }
+  if(d.go){ go(d.go); return; }
+  if(d.cd){ UI.cd=d.cd; render(); return; }
+  if(d.utab){ UI.userTab=d.utab; render(); return; }
+  if(d.date){ UI.assistDate=d.date; render(); toast('Mostrando: '+d.date); return; }
+  if(d.approve){ const x=u(+d.approve); x.status='Activo'; log('Aprobó el registro de '+full(x)+' ('+x.role+' · '+cdName(x.cd)+')'); render(); toast(full(x)+' aprobado: ya puede marcar'); return; }
+  if(d.reject){ const x=u(+d.reject); USERS=USERS.filter(y=>y!==x); log('Rechazó el registro de '+full(x)); render(); toast('Registro rechazado'); return; }
+  if(d.block){ const x=u(+d.block); x.status = x.status==='Bloqueado'?'Activo':'Bloqueado'; log((x.status==='Bloqueado'?'Bloqueó a ':'Desbloqueó a ')+full(x)); render(); toast(x.status==='Bloqueado'?full(x)+' bloqueado: no puede entrar ni marcar':full(x)+' desbloqueado'); return; }
+  if(d.del){ const x=u(+d.del); openModal(`<h2 style="font-size:18px">¿Eliminar a ${full(x)}?</h2><p class="muted" style="margin:0">Se borra su cuenta. Sus marcaciones se conservan hasta que venza la retención.</p><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-act="close">Cancelar</button><button class="btn danger" data-act="confirmdel" data-id="${x.id}">Eliminar</button></div>`); return; }
+  if(d.uedit){ go('editar-usuario-'+d.uedit); return; }
+  if(d.unlock){ const x=u(+d.unlock); x.sig.locked=false; log('Habilitó cambio de firma para '+full(x)); render(); toast('Se notificó a '+full(x)+' que puede cambiar su firma'); return; }
+  if(d.jedit){ editJornada(+d.jedit, d.focus||'in'); return; }
+  if(d.issues){ UI.onlyIssues=!UI.onlyIssues; render(); return; }
+  if(d.reason){ const r=$('#jreason'); r.value = r.value ? r.value+'. '+d.reason : d.reason; return; }
+  if(d.accept||d.rejecta){ const a=ALERTS.find(y=>y.id===+(d.accept||d.rejecta)); a.state=d.accept?'aceptada':'rechazada'; const j=JORN.find(y=>y.id===a.jid); if(j&&j[a.part]) j[a.part].s=a.state; log((d.accept?'Aceptó':'Rechazó')+' la marca de '+full(u(a.uid))+' ('+a.text+')'); render(); toast(d.accept?'Marca aceptada':'Marca rechazada'); return; }
+  if(d.qr){ const c=CDS.find(y=>y.code===d.qr); c.qr=!c.qr; log((c.qr?'Habilitó':'Deshabilitó')+' el QR en '+cdName(c.code)); render(); toast('QR '+(c.qr?'habilitado':'deshabilitado')+' en '+c.name); return; }
+  if(d.rot){ const [code,s]=d.rot.split(':'); const c=CDS.find(y=>y.code===code); c.rot=+s; log('Cambió la rotación del QR de '+cdName(code)+' a '+s+' s'); render(); toast('El QR de '+c.name+' cambiará cada '+s+' s'); return; }
+  if(d.ret){ CFG.retention=+d.ret; log('Cambió la retención de datos a '+d.ret+' días'); render(); toast('Retención: '+d.ret+' días'); return; }
+  if(d.theme){ CFG.theme=d.theme; render(); toast('Tema: '+t.textContent); return; }
+  const act = d.act;
+  if(act==='login'){ UI.logged=true; go('resumen'); return; }
+  if(act==='noop'){ e.preventDefault(); toast('Registro: correo, contraseña, nombre, apellidos, CD y firma'); return; }
+  if(act==='close'){ closeModal(); return; }
+  if(act==='confirmdel'){ const x=u(+d.id); USERS=USERS.filter(y=>y!==x); log('Eliminó al usuario '+full(x)); closeModal(); render(); toast('Usuario eliminado'); return; }
+  if(act==='savejorn'){ const r=$('#jreason').value.trim(); if(!r){ $('#jreason').focus(); toast('Escribe el motivo antes de guardar'); return; }
+    const j=JORN.find(y=>y.id===+d.id); const ni=$('#jin').value, no=$('#jout').value; const ch=[];
+    if(ni && ni!==j.in.t){ ch.push('entrada '+j.in.t+' → '+ni); j.in={t:ni,m:'Editada por admin',d:'—',s:'ok'}; }
+    const oldOut = j.out?j.out.t:'—';
+    if(no && no!==oldOut){ ch.push('salida '+oldOut+' → '+no); j.out={t:no,m:'Editada por admin',d:'—',s:'ok'}; }
+    if(!ch.length){ toast('No cambiaste ninguna hora'); return; }
+    j.edited=true;
+    ALERTS.filter(a=>a.jid===j.id&&a.state==='abierta').forEach(a=>a.state='aceptada');
+    log('Corrigió la jornada de '+full(u(j.uid))+' del '+j.date+': '+ch.join(', ')+'. Motivo: '+r); closeModal(); render(); toast('Jornada corregida y registrada en la bitácora'); return; }
+  if(act==='savecd'){ log('Actualizó geocerca y turnos de un CD'); toast('Cambios del CD guardados'); return; }
+  if(act==='savecfg'){ CFG.appName=$('#appname').value||CFG.appName; CFG.sigDays=+$('#sigdays').value||CFG.sigDays; log('Actualizó la configuración general'); render(); toast('Configuración guardada'); return; }
+  if(act==='addadmin'){ openModal(`<h2 style="font-size:18px">Agregar administrador</h2><label class="field">Usuario<select id="newadmin">${USERS.filter(x=>x.role!=='Admin'&&x.status==='Activo').map(x=>`<option value="${x.id}">${full(x)} · ${x.role}</option>`).join('')}</select></label><div class="muted" style="font-size:12px">Tendrá el mismo nivel que el admin principal.</div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-act="close">Cancelar</button><button class="btn pri" data-act="confirmadmin">Agregar</button></div>`); return; }
+  if(act==='confirmadmin'){ const x=u(+$('#newadmin').value); x.role='Admin'; ADMINS.push({name:full(x),email:x.email,since:now().split(' ')[0]+'/2026'}); log('Dio rol de administrador a '+full(x)); closeModal(); render(); toast(full(x)+' ahora es administrador'); return; }
+  if(act==='dl'){ toast('En la app real se descarga el archivo'); return; }
+  if(act==='saveprof'){ toast('Perfil guardado'); return; }
+  if(act==='logout'){ UI.logged=false; go('login'); return; }
+});
+document.addEventListener('input', e=>{
+  if(e.target.id==='radius'){ $('#rv').textContent=e.target.value+' m'; }
+  if(e.target.id==='q'){ UI.q=e.target.value; render(); const q=$('#q'); q.focus(); q.setSelectionRange(q.value.length,q.value.length); }
+  if(e.target.id==='jin'||e.target.id==='jout'){ const i=$('#jin').value,o=$('#jout').value; if(i&&o){ let m=toMin(o)-toMin(i); if(m<0)m+=1440; $('#jh').textContent=Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min'; } }
+});
+document.addEventListener('submit', e=>{
+  e.preventDefault();
+  if(e.target.id==='uform'){ const f=new FormData(e.target); const id=e.target.dataset.id;
+    if(id){ const x=u(+id); Object.assign(x,{first:f.get('first'),last:f.get('last'),email:f.get('email'),role:f.get('role'),cd:f.get('cd')}); log('Editó los datos de '+full(x)); toast('Cambios guardados'); }
+    else { const nid=Math.max(...USERS.map(x=>x.id))+1; USERS.push({id:nid,first:f.get('first'),last:f.get('last'),email:f.get('email'),role:f.get('role'),cd:f.get('cd'),status:'Activo',via:'Correo',sig:null,created:'10/11/2026'}); log('Creó el usuario '+f.get('first')+' '+f.get('last')); UI.userTab='Activo'; toast('Usuario creado; recibirá un correo para su contraseña'); }
+    go('usuarios'); }
+  if(e.target.id==='cdform'){ const f=new FormData(e.target); CDS.push({code:f.get('code'),name:f.get('name'),lat:'13.70',lng:'-89.20',radius:150,alert:1000,pa:'Sin asignar',guards:0,onDuty:0,qr:false,rot:30,kiosk:null}); log('Agregó el CD '+f.get('name')+' '+f.get('code')); toast('CD agregado'); go('cds'); }
+  if(e.target.id==='rform'){ const fmt=(e.submitter&&e.submitter.value)||'Excel'; const f=new FormData(e.target); REPORTS.unshift({name:f.get('tipo')+' · '+f.get('cd'),range:'01/11 – 15/11',fmt,by:'Admin principal',when:now()}); log('Generó reporte '+fmt+': '+f.get('tipo')); render(); toast('Reporte '+fmt+' generado'); }
+});
+
+render();
+</script>
+</body>
+</html>
