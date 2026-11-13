@@ -1,0 +1,475 @@
+rules_version = '2';
+
+// ============================================================================
+//  Marcación CD · Reglas de seguridad de Cloud Firestore
+//  Los roles se validan SIEMPRE aquí (get() del perfil), nunca solo en la interfaz.
+//  Ver docs/modelo-datos.md para el detalle de cada colección.
+// ============================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- helpers
+    function signedIn() { return request.auth != null; }
+    function yo() { return request.auth.uid; }
+    function perfilPath() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function tienePerfil() { return signedIn() && exists(perfilPath()); }
+    function perfil() { return get(perfilPath()).data; }
+    function activo() { return tienePerfil() && perfil().estado == 'activo'; }
+    function esAdmin() { return activo() && perfil().rol == 'admin'; }
+    function esPA() { return activo() && perfil().rol == 'pa'; }
+    function esPADe(cdId) { return esPA() && perfil().cdId == cdId; }
+    function esStaffDe(cdId) { return esAdmin() || esPADe(cdId); }
+    function esGuardia() { return activo() && perfil().rol == 'seguridad'; }
+    function esKioscoDe(cdId) { return activo() && perfil().rol == 'kiosco' && perfil().cdId == cdId; }
+    function cambios() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    function cdDe(cdId) { return get(/databases/$(database)/documents/cds/$(cdId)).data; }
+
+    function config() {
+      return exists(/databases/$(database)/documents/config/general)
+        ? get(/databases/$(database)/documents/config/general).data
+        : { 'diasCambioFirma': 30, 'diasRetencion': 90 };
+    }
+
+    function textoValido(t, min, max) { return t is string && t.size() >= min && t.size() <= max; }
+    function textoOpcional(t, max) { return t == null || (t is string && t.size() <= max); }
+
+    // Fecha 'yyyy-MM-dd' en hora de El Salvador (UTC-6 fijo, sin horario de verano).
+    function fechaSV(t) {
+      let s = t - duration.value(6, 'h');
+      return string(s.year()) + '-'
+        + (s.month() < 10 ? '0' : '') + string(s.month()) + '-'
+        + (s.day() < 10 ? '0' : '') + string(s.day());
+    }
+
+    // ------------------------------------------------------------ firma (SVG)
+    function firmaNuevaValida(f) {
+      return f is map
+        && f.keys().hasOnly(['tipo', 'svg', 'fuente', 'actualizadaEn', 'cambioHabilitado'])
+        && f.keys().hasAll(['tipo', 'svg', 'fuente', 'actualizadaEn', 'cambioHabilitado'])
+        && f.tipo in ['dibujada', 'generada']
+        && textoValido(f.svg, 20, 150000)
+        && (f.tipo == 'dibujada' ? f.fuente == null : f.fuente in ['Great Vibes', 'Dancing Script', 'Allura'])
+        && f.actualizadaEn == request.time
+        && f.cambioHabilitado == false;
+    }
+
+    function puedeCambiarFirma(f) {
+      return f == null
+        || f.cambioHabilitado == true
+        || request.time >= f.actualizadaEn + duration.value(config().diasCambioFirma, 'd');
+    }
+
+    // ================================================================= USUARIOS
+    match /users/{uid} {
+      allow read: if signedIn() && (
+        uid == yo()
+        || esAdmin()
+        || (esPA() && resource.data.cdId == perfil().cdId)
+      );
+
+      // Alta del propio perfil ("Completa tu perfil" / registro con correo).
+      allow create: if signedIn() && uid == yo() && perfilNuevoValido();
+
+      // El usuario edita su nombre, su firma (con plazo) y vincula su dispositivo.
+      allow update: if signedIn() && uid == yo() && resource.data.estado != 'bloqueado' && autoEdicionValida()
+        || esAdmin() && edicionAdminUsuarioValida();
+
+      allow delete: if esAdmin() && uid != yo();
+
+      function perfilNuevoValido() {
+        let d = request.resource.data;
+        let correo = request.auth.token.email;
+        let invPath = /databases/$(database)/documents/invitaciones/$(correo);
+        let invitado = request.auth.token.email_verified == true && exists(invPath);
+        return d.keys().hasOnly(['uid', 'nombre', 'apellidos', 'email', 'rol', 'cdId', 'estado', 'proveedor',
+                                 'deviceId', 'deviceIdPendiente', 'firma', 'consentimientoUbicacion', 'creadoEn'])
+          && d.keys().hasAll(['uid', 'nombre', 'apellidos', 'email', 'rol', 'cdId', 'estado', 'proveedor',
+                              'deviceId', 'firma', 'consentimientoUbicacion', 'creadoEn'])
+          && d.uid == uid
+          && d.email == correo
+          && textoValido(d.nombre, 1, 60)
+          && textoValido(d.apellidos, 1, 60)
+          && d.proveedor in ['google', 'correo']
+          && d.consentimientoUbicacion == true
+          && (d.deviceId == null || textoValido(d.deviceId, 1, 100))
+          && d.get('deviceIdPendiente', null) == null
+          && d.creadoEn == request.time
+          && exists(/databases/$(database)/documents/cds/$(d.cdId))
+          && (invitado
+              ? (d.rol == get(invPath).data.rol && d.cdId == get(invPath).data.cdId && d.estado == 'activo'
+                 && (d.firma == null || firmaNuevaValida(d.firma)))
+              : (d.rol == 'seguridad' && d.estado == 'pendiente' && firmaNuevaValida(d.firma)));
+      }
+
+      function autoEdicionValida() {
+        let d = request.resource.data;
+        let o = resource.data;
+        let c = cambios();
+        return c.hasOnly(['nombre', 'apellidos', 'firma', 'deviceId', 'deviceIdPendiente'])
+          && (!('nombre' in c) || textoValido(d.nombre, 1, 60))
+          && (!('apellidos' in c) || textoValido(d.apellidos, 1, 60))
+          // El primer dispositivo se vincula solo; cambiarlo lo aprueba un admin.
+          && (!('deviceId' in c) || (o.deviceId == null && textoValido(d.deviceId, 1, 100)))
+          && (!('deviceIdPendiente' in c) || d.deviceIdPendiente == null || textoValido(d.deviceIdPendiente, 1, 100))
+          && (!('firma' in c) || (puedeCambiarFirma(o.firma) && firmaNuevaValida(d.firma)));
+      }
+
+      function edicionAdminUsuarioValida() {
+        let d = request.resource.data;
+        return d.uid == resource.data.uid
+          && d.email == resource.data.email
+          && d.rol in ['admin', 'pa', 'seguridad', 'kiosco']
+          && d.estado in ['pendiente', 'activo', 'bloqueado']
+          && textoValido(d.nombre, 1, 60)
+          && textoValido(d.apellidos, 1, 60)
+          && exists(/databases/$(database)/documents/cds/$(d.cdId))
+          && (!('firma' in cambios()) || d.firma == null
+              || (d.firma.diff(resource.data.firma).affectedKeys().hasOnly(['cambioHabilitado'])));
+      }
+    }
+
+    // ============================================================ INVITACIONES
+    // Sin Cloud Functions el admin no puede crear cuentas: crea una invitación por correo.
+    match /invitaciones/{correo} {
+      allow read: if esAdmin() || (signedIn() && request.auth.token.email == correo);
+      allow create, update: if esAdmin()
+        && request.resource.data.keys().hasOnly(['email', 'nombre', 'apellidos', 'rol', 'cdId', 'creadoPor', 'creadoEn'])
+        && request.resource.data.email == correo
+        && request.resource.data.rol in ['admin', 'pa', 'seguridad', 'kiosco']
+        && textoValido(request.resource.data.nombre, 1, 60)
+        && textoValido(request.resource.data.apellidos, 1, 60)
+        && exists(/databases/$(database)/documents/cds/$(request.resource.data.cdId))
+        && request.resource.data.creadoPor == yo()
+        && request.resource.data.creadoEn == request.time;
+      allow delete: if esAdmin()
+        || (signedIn() && request.auth.token.email == correo && request.auth.token.email_verified == true);
+    }
+
+    // ================================================================= CDs
+    match /cds/{cdId} {
+      // Todos los usuarios con sesión leen la lista (se elige el CD al registrarse).
+      allow read: if signedIn();
+      allow create: if esAdmin() && cdValido(request.resource.data) && request.resource.data.codigo == cdId;
+      allow update: if (esAdmin() && cdValido(request.resource.data) && request.resource.data.codigo == resource.data.codigo)
+        || (esPADe(cdId) && cambios().hasOnly(['qrHabilitado']) && request.resource.data.qrHabilitado is bool);
+      allow delete: if esAdmin();
+
+      function cdValido(d) {
+        return d.keys().hasOnly(['nombre', 'codigo', 'ubicacion', 'radioValido', 'radioAlerta', 'turnos',
+                                 'toleranciaMin', 'qrHabilitado', 'qrRotacionSeg', 'paUids', 'kioscoEmail'])
+          && textoValido(d.nombre, 1, 60)
+          && textoValido(d.codigo, 1, 20)
+          && d.ubicacion is latlng
+          && d.radioValido is number && d.radioValido >= 20 && d.radioValido <= 1000
+          && d.radioAlerta is number && d.radioAlerta > d.radioValido && d.radioAlerta <= 20000
+          && d.turnos is list && d.turnos.size() == 3
+          && d.toleranciaMin is int && d.toleranciaMin >= 0 && d.toleranciaMin <= 120
+          && d.qrHabilitado is bool
+          && d.qrRotacionSeg in [15, 30, 60]
+          && d.paUids is list;
+      }
+    }
+
+    // ================================================================= JORNADAS
+    // Una jornada = entrada + salida de un turno. La fecha es la de la ENTRADA.
+    match /jornadas/{jid} {
+      allow read: if signedIn() && (
+        (resource.data.uid == yo() && activo())
+        || esAdmin()
+        || esPADe(resource.data.cdId)
+        || esKioscoDe(resource.data.cdId)
+      );
+
+      allow create: if (esGuardia() && entradaGuardiaValida())
+        || (esAdmin() && jornadaAdminValida(request.resource.data, null));
+
+      allow update: if (esGuardia() && salidaGuardiaValida())
+        || (esAdmin() && jornadaAdminValida(request.resource.data, resource.data));
+
+      // Nadie borra jornadas desde la app (solo la purga automática con firebase-admin).
+      allow delete: if false;
+
+      function camposJornada() {
+        return ['uid', 'nombre', 'cdId', 'fecha', 'turno', 'toleranciaMin', 'entrada', 'salida', 'estado',
+                'editada', 'ultimaEdicionId', 'entradaOriginal', 'salidaOriginal', 'expiraEn', 'creadoEn'];
+      }
+
+      function zonaCoincide(z, d, cd) {
+        // Margen de 3 m por diferencias de redondeo entre el teléfono y el servidor.
+        return (z == 'valida' && d <= cd.radioValido + 3)
+          || (z == 'observacion' && d >= cd.radioValido - 3 && d <= cd.radioAlerta + 3)
+          || (z == 'alerta' && d >= cd.radioAlerta - 3);
+      }
+
+      function gpsValido(m, cd) {
+        let d = cd.ubicacion.distance(latlng.value(m.lat, m.lng));
+        return m.lat is number && m.lng is number
+          && m.lat >= -90 && m.lat <= 90 && m.lng >= -180 && m.lng <= 180
+          && m.precision is number && m.precision >= 0
+          && m.distanciaM is number && math.abs(m.distanciaM - d) <= 5 + d * 0.005
+          && m.qrToken == null
+          && zonaCoincide(m.zona, d, cd);
+      }
+
+      function qrValido(m, cdId, cd) {
+        let k = get(/databases/$(database)/documents/kioscos/$(cdId)).data;
+        let gracia = duration.value(k.rotSeg, 's');
+        return cd.qrHabilitado == true
+          && m.qrToken is string
+          && m.qrToken in k.tokens
+          && request.time >= k.tokens[m.qrToken].desde - gracia
+          && request.time <= k.tokens[m.qrToken].hasta + gracia
+          && m.offline == false
+          && m.zona == 'valida'
+          && m.lat == null && m.lng == null && m.precision == null && m.distanciaM == null;
+      }
+
+      function marcaGuardiaValida(m, cdId, cd, p) {
+        return m is map
+          && m.keys().hasOnly(['horaServidor', 'horaDispositivo', 'metodo', 'lat', 'lng', 'precision',
+                               'distanciaM', 'zona', 'offline', 'deviceId', 'dispositivoDistinto', 'qrToken'])
+          && m.keys().hasAll(['horaServidor', 'horaDispositivo', 'metodo', 'lat', 'lng', 'precision',
+                              'distanciaM', 'zona', 'offline', 'deviceId', 'dispositivoDistinto', 'qrToken'])
+          // Hora del SERVIDOR, nunca la del celular.
+          && m.horaServidor == request.time
+          && m.horaDispositivo is timestamp
+          && m.horaDispositivo <= request.time + duration.value(5, 'm')
+          && m.horaDispositivo > request.time - duration.value(2, 'd')
+          && m.offline is bool
+          && textoValido(m.deviceId, 1, 100)
+          && m.dispositivoDistinto == (p.deviceId != null && m.deviceId != p.deviceId)
+          && ((m.metodo == 'gps' && gpsValido(m, cd)) || (m.metodo == 'qr' && qrValido(m, cdId, cd)));
+      }
+
+      // Una marca "fuera de 1 km" exige crear su alerta en el mismo lote.
+      function alertaSiFuera(m, parte) {
+        return m.zona != 'alerta'
+          || existsAfter(/databases/$(database)/documents/alertas/$(jid + '_' + parte));
+      }
+
+      function entradaGuardiaValida() {
+        let d = request.resource.data;
+        let p = perfil();
+        let cd = cdDe(p.cdId);
+        return d.keys().hasOnly(camposJornada())
+          && d.keys().hasAll(['uid', 'nombre', 'cdId', 'fecha', 'turno', 'toleranciaMin', 'entrada', 'salida',
+                              'estado', 'editada', 'ultimaEdicionId', 'expiraEn', 'creadoEn'])
+          && d.uid == yo()
+          && d.cdId == p.cdId
+          && d.nombre == p.nombre + ' ' + p.apellidos
+          && d.turno in cd.turnos
+          && d.toleranciaMin == cd.toleranciaMin
+          && d.salida == null
+          && d.estado == 'abierta'
+          && d.editada == false
+          && d.ultimaEdicionId == null
+          && d.get('entradaOriginal', null) == null
+          && d.get('salidaOriginal', null) == null
+          && d.expiraEn is timestamp
+          && d.creadoEn == request.time
+          && d.fecha is string
+          && (d.fecha == fechaSV(request.time) || d.fecha == fechaSV(d.entrada.horaDispositivo))
+          && marcaGuardiaValida(d.entrada, p.cdId, cd, p)
+          && alertaSiFuera(d.entrada, 'entrada');
+      }
+
+      function salidaGuardiaValida() {
+        let d = request.resource.data;
+        let o = resource.data;
+        let p = perfil();
+        let cd = cdDe(o.cdId);
+        return o.uid == yo()
+          && o.cdId == p.cdId
+          && o.salida == null
+          && o.estado == 'abierta'
+          // Solo agrega la salida, una vez, y nunca toca la entrada.
+          && cambios().hasOnly(['salida', 'estado'])
+          && d.estado == 'cerrada'
+          && request.time < o.entrada.horaServidor + duration.value(24, 'h')
+          && marcaGuardiaValida(d.salida, o.cdId, cd, p)
+          && alertaSiFuera(d.salida, 'salida');
+      }
+
+      // Toda creación/corrección del admin va en un batch con su registro en la bitácora.
+      function jornadaAdminValida(d, o) {
+        let logId = d.ultimaEdicionId;
+        let logPath = /databases/$(database)/documents/bitacora/$(logId);
+        let log = getAfter(logPath).data;
+        return d.keys().hasOnly(camposJornada())
+          && d.editada == true
+          && logId is string
+          && (o == null || (logId != o.ultimaEdicionId && d.uid == o.uid && d.cdId == o.cdId && d.fecha == o.fecha))
+          && !exists(logPath)
+          && existsAfter(logPath)
+          && log.refTipo == 'jornada'
+          && log.refId == jid
+          && log.quien == yo()
+          && textoValido(log.motivo, 3, 500)
+          && d.estado in ['abierta', 'cerrada']
+          && (d.estado == 'cerrada') == (d.salida != null);
+      }
+    }
+
+    // ================================================================= ALERTAS
+    match /alertas/{aid} {
+      allow read: if esAdmin() || (esPA() && resource.data.cdId == perfil().cdId);
+
+      // El guardia la crea en el mismo lote que su marca (id = {jornadaId}_{parte}).
+      allow create: if esGuardia() && alertaGuardiaValida();
+
+      allow update: if (esAdmin() || (esPADe(resource.data.cdId) && resource.data.estado == 'abierta'))
+        && cambios().hasOnly(['estado', 'resueltoPor', 'resueltoNombre', 'comentario', 'resueltoEn'])
+        && request.resource.data.estado in ['aceptada', 'rechazada']
+        && request.resource.data.resueltoPor == yo()
+        && textoOpcional(request.resource.data.get('resueltoNombre', null), 120)
+        && textoOpcional(request.resource.data.comentario, 500)
+        && request.resource.data.resueltoEn == request.time;
+
+      allow delete: if false;
+
+      function alertaGuardiaValida() {
+        let d = request.resource.data;
+        let j = getAfter(/databases/$(database)/documents/jornadas/$(d.jornadaId)).data;
+        return d.keys().hasOnly(['jornadaId', 'uid', 'nombre', 'cdId', 'parte', 'tipo', 'severidad', 'texto',
+                                 'distanciaM', 'estado', 'resueltoPor', 'comentario', 'creadoEn'])
+          && aid == d.jornadaId + '_' + d.parte
+          && d.uid == yo()
+          && d.cdId == perfil().cdId
+          && j.uid == yo()
+          && d.parte in ['entrada', 'salida']
+          && d.tipo in ['fuera_rango', 'observacion', 'sin_conexion', 'dispositivo']
+          && d.severidad in ['alta', 'media', 'info']
+          && textoValido(d.texto, 1, 300)
+          && d.estado == 'abierta'
+          && d.resueltoPor == null
+          && d.comentario == null
+          && d.creadoEn == request.time;
+      }
+    }
+
+    // ================================================================= KIOSCOS
+    // Lote de tokens del QR dinámico. Los guardias NO lo leen: el token se valida con get() arriba.
+    match /kioscos/{cdId} {
+      allow read: if esKioscoDe(cdId) || esStaffDe(cdId);
+      allow write: if (esKioscoDe(cdId) || esStaffDe(cdId))
+        && request.resource.data.keys().hasOnly(['cdId', 'rotSeg', 'tokens', 'actualizadoEn'])
+        && request.resource.data.cdId == cdId
+        && request.resource.data.rotSeg in [15, 30, 60]
+        && request.resource.data.tokens is map
+        && request.resource.data.tokens.size() <= 600
+        && request.resource.data.actualizadoEn == request.time;
+    }
+
+    // ================================================================= BITÁCORA
+    // Solo se agrega. Nadie la edita ni la borra desde la app.
+    match /bitacora/{id} {
+      allow read: if esAdmin() || (esPA() && resource.data.cdId == perfil().cdId);
+      allow create: if (esAdmin() || esPA())
+        && request.resource.data.keys().hasOnly(['quien', 'quienNombre', 'rol', 'accion', 'detalle', 'motivo',
+                                                 'refTipo', 'refId', 'cdId', 'antes', 'despues', 'fecha'])
+        && request.resource.data.quien == yo()
+        && request.resource.data.rol == perfil().rol
+        && textoValido(request.resource.data.quienNombre, 1, 130)
+        && textoValido(request.resource.data.accion, 1, 60)
+        && textoValido(request.resource.data.detalle, 0, 1000)
+        && textoOpcional(request.resource.data.motivo, 500)
+        && request.resource.data.fecha == request.time
+        && (esAdmin() || request.resource.data.cdId == perfil().cdId);
+      allow update, delete: if false;
+    }
+
+    // ============================================================ NOTIFICACIONES
+    match /notificaciones/{id} {
+      allow read: if signedIn() && puedeVerNotif(resource.data);
+
+      allow create: if tienePerfil()
+        && request.resource.data.keys().hasOnly(['para', 'uid', 'cdId', 'tipo', 'texto', 'enlace', 'creadoPor',
+                                                 'creadoEn', 'leidaPor'])
+        && request.resource.data.creadoPor == yo()
+        && request.resource.data.creadoEn == request.time
+        && request.resource.data.leidaPor == []
+        && textoValido(request.resource.data.texto, 1, 300)
+        && textoOpcional(request.resource.data.enlace, 200)
+        && request.resource.data.tipo in ['firma', 'registro', 'alerta', 'solicitud', 'firma_habilitada', 'solicitud_resuelta']
+        && (
+          // Avisos para admins y PA del CD: cualquiera con perfil, sobre su propio CD.
+          (request.resource.data.para == 'staff' && request.resource.data.uid == null
+            && (esAdmin() || request.resource.data.cdId == perfil().cdId))
+          // Avisos para un usuario: solo admin o PA.
+          || (request.resource.data.para == 'usuario' && request.resource.data.uid is string
+            && (esAdmin() || (esPA() && request.resource.data.cdId == perfil().cdId)))
+        );
+
+      allow update: if signedIn() && puedeVerNotif(resource.data)
+        && cambios().hasOnly(['leidaPor'])
+        && request.resource.data.leidaPor.hasAll(resource.data.leidaPor)
+        && request.resource.data.leidaPor.toSet().difference(resource.data.leidaPor.toSet()).hasOnly([yo()]);
+
+      allow delete: if false;
+
+      function puedeVerNotif(n) {
+        return (n.para == 'usuario' && n.uid == yo())
+          || (n.para == 'staff' && (esAdmin() || (esPA() && n.cdId == perfil().cdId)));
+      }
+    }
+
+    // ============================================================ SOLICITUDES
+    match /solicitudes/{id} {
+      allow read: if signedIn() && (
+        (resource.data.uid == yo() && activo()) || esAdmin() || esPADe(resource.data.cdId)
+      );
+      allow create: if esGuardia()
+        && request.resource.data.keys().hasOnly(['uid', 'nombre', 'cdId', 'jornadaId', 'fecha', 'tipo', 'texto',
+                                                 'estado', 'respuesta', 'creadoEn'])
+        && request.resource.data.uid == yo()
+        && request.resource.data.cdId == perfil().cdId
+        && request.resource.data.nombre == perfil().nombre + ' ' + perfil().apellidos
+        && (request.resource.data.jornadaId == null || request.resource.data.jornadaId is string)
+        && textoValido(request.resource.data.fecha, 10, 10)
+        && request.resource.data.tipo in ['olvido_entrada', 'olvido_salida', 'hora_incorrecta', 'otro']
+        && textoValido(request.resource.data.texto, 3, 500)
+        && request.resource.data.estado == 'abierta'
+        && request.resource.data.respuesta == null
+        && request.resource.data.creadoEn == request.time;
+      allow update: if esAdmin()
+        && cambios().hasOnly(['estado', 'respuesta', 'resueltoEn'])
+        && request.resource.data.estado in ['resuelta', 'rechazada']
+        && textoOpcional(request.resource.data.respuesta, 500)
+        && request.resource.data.resueltoEn == request.time;
+      allow delete: if false;
+    }
+
+    // ================================================================= REPORTES
+    // Historial de reportes generados (solo parámetros; el archivo se vuelve a generar).
+    match /reportes/{id} {
+      allow read: if esAdmin() || (esPA() && resource.data.cdId == perfil().cdId);
+      allow create: if (esAdmin() || esPA())
+        && request.resource.data.por == yo()
+        && request.resource.data.fecha == request.time
+        && request.resource.data.formato in ['Excel', 'PDF']
+        && textoValido(request.resource.data.nombre, 1, 200)
+        && (esAdmin() || request.resource.data.cdId == perfil().cdId);
+      allow update, delete: if false;
+    }
+
+    // ================================================================= CONFIG
+    match /config/{docId} {
+      // Nombre de la app y tema se muestran incluso antes de iniciar sesión.
+      allow read: if true;
+      allow write: if esAdmin() && docId == 'general'
+        && request.resource.data.keys().hasOnly(['diasRetencion', 'diasCambioFirma', 'nombreApp', 'tema'])
+        && request.resource.data.diasRetencion is int
+        && request.resource.data.diasRetencion >= 30 && request.resource.data.diasRetencion <= 180
+        && request.resource.data.diasCambioFirma is int
+        && request.resource.data.diasCambioFirma >= 1 && request.resource.data.diasCambioFirma <= 365
+        && textoValido(request.resource.data.nombreApp, 1, 40)
+        && request.resource.data.tema in ['claro', 'oscuro', 'auto'];
+    }
+
+    // Todo lo demás, cerrado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
