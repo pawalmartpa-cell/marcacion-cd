@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import type { Alerta, Jornada, Parte } from '@/types';
 import type { ConId } from '@/data/hooks';
@@ -13,7 +12,8 @@ import {
   resolucionesDe,
 } from '@/lib/jornada';
 import { duracionTexto, fechaCorta, fechaISO, hora, sumarDiasISO } from '@/lib/fechas';
-import { Button, Chip, cx } from '@/components/ui';
+import { Avatar, Button, Chip, cx } from '@/components/ui';
+import { Icon } from '@/components/Icon';
 import { usePanel } from '../contexto';
 
 export function etiquetaDia(iso: string): string {
@@ -23,7 +23,7 @@ export function etiquetaDia(iso: string): string {
   return '';
 }
 
-function CeldaHora({
+function CajaMarca({
   j,
   parte,
   alertas,
@@ -35,41 +35,47 @@ function CeldaHora({
   onEditar?: (j: Jornada, p: Parte) => void;
 }) {
   const m = j[parte];
-  const nombreParte = parte === 'entrada' ? 'entrada' : 'salida';
+  const nombreParte = parte === 'entrada' ? 'Entrada' : 'Salida';
+  const base =
+    'flex min-h-[72px] min-w-0 flex-1 basis-0 flex-col justify-center gap-0.5 rounded-xl border px-3 py-2 text-left';
   if (!m) {
     return onEditar ? (
       <button
         type="button"
-        className="flex min-h-[44px] min-w-[118px] items-center justify-center rounded-[10px] border border-dashed border-line px-2.5 font-bold text-wm-blue hover:border-wm-blue hover:bg-info-bg dark:text-info"
+        className={cx(
+          base,
+          'items-center border-dashed border-line font-bold text-wm-blue hover:border-wm-blue hover:bg-info-bg dark:text-info',
+        )}
         onClick={() => onEditar(j, parte)}
-        aria-label={`Agregar ${nombreParte} de ${j.nombre}`}
+        aria-label={`Agregar ${nombreParte.toLowerCase()} de ${j.nombre}`}
       >
-        + Agregar
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{nombreParte}</span>+
+        Agregar
       </button>
     ) : (
-      <span className="text-muted">—</span>
+      <div className={cx(base, 'border-dashed border-line')}>
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{nombreParte}</span>
+        <span className="text-muted">Sin marcar</span>
+      </div>
     );
   }
   const res = resolucionesDe(alertas, j.id)[parte];
   const e = ESTADO_MARCA[estadoMarca(m, res)];
-  const titulo = `${detalleMarca(m)} · ${e.texto}`;
   const contenido = (
     <>
-      <i
-        className="absolute left-2.5 top-[13px] h-2 w-2 rounded-full"
-        style={{ background: e.color }}
-        aria-hidden
-      />
-      <b className="tabular pl-3.5 text-base">{hora(horaEfectiva(m))}</b>
-      <span className="pl-3.5 text-[11px] text-muted">{detalleMarca(m)}</span>
+      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
+        <i className="inline-block h-2 w-2 rounded-full" style={{ background: e.color }} aria-hidden />
+        {nombreParte}
+      </span>
+      <b className="tabular text-xl leading-tight">{hora(horaEfectiva(m))}</b>
+      <span className="truncate text-[11px] text-muted">{detalleMarca(m)}</span>
     </>
   );
-  const clase =
-    'relative flex min-w-[118px] flex-col items-start gap-px rounded-[10px] border border-dashed border-transparent px-2.5 py-1.5 text-left';
+  const titulo = `${detalleMarca(m)} · ${e.texto}`;
   return onEditar ? (
     <button
       type="button"
-      className={cx(clase, 'hover:border-wm-blue hover:bg-info-bg')}
+      className={cx(base, 'border-line hover:border-wm-blue hover:bg-info-bg')}
       title={titulo}
       aria-label={`${nombreParte} ${hora(horaEfectiva(m))}, ${titulo}. Corregir`}
       onClick={() => onEditar(j, parte)}
@@ -77,7 +83,7 @@ function CeldaHora({
       {contenido}
     </button>
   ) : (
-    <div className={clase} title={titulo}>
+    <div className={cx(base, 'border-line')} title={titulo}>
       {contenido}
     </div>
   );
@@ -98,101 +104,84 @@ export function TablaJornadas({
 }) {
   const { r, cdNombre } = usePanel();
   const dias = [...new Set(jornadas.map((j) => j.fecha))].sort().reverse();
-  const cols = mostrarNombre ? 7 : 6;
+  if (jornadas.length === 0) return <p className="py-6 text-center text-muted">{vacio}</p>;
   return (
-    <div className="overflow-x-auto">
-      <table className="tbl w-full border-collapse">
-        <thead>
-          <tr>
-            {mostrarNombre && <th scope="col">Guardia</th>}
-            <th scope="col">Turno</th>
-            <th scope="col">Entrada</th>
-            <th scope="col">Salida</th>
-            <th scope="col">Horas</th>
-            <th scope="col">Estado</th>
-            <th scope="col">
-              <span className="sr-only">Acciones</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {jornadas.length === 0 && (
-            <tr>
-              <td colSpan={cols} className="text-muted">
-                {vacio}
-              </td>
-            </tr>
-          )}
-          {dias.map((d) => {
-            const delDia = jornadas.filter((j) => j.fecha === d);
-            return (
-              <Fragment key={d}>
-                <tr className="daysep">
-                  <td colSpan={cols}>
-                    {etiquetaDia(d)}
-                    {fechaCorta(d)} · {delDia.length} jornada{delDia.length === 1 ? '' : 's'}
-                  </td>
-                </tr>
-                {delDia.map((j) => {
-                  const est = estadoJornada(j, resolucionesDe(alertas, j.id));
-                  const tarde = minutosTarde(j);
-                  return (
-                    <tr key={j.id}>
+    <div className="flex flex-col gap-4">
+      {dias.map((d) => {
+        const delDia = jornadas.filter((j) => j.fecha === d);
+        return (
+          <section key={d} aria-label={`Jornadas del ${fechaCorta(d)}`}>
+            <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
+              {etiquetaDia(d)}
+              {fechaCorta(d)} · {delDia.length} jornada{delDia.length === 1 ? '' : 's'}
+            </h3>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
+              {delDia.map((j) => {
+                const est = estadoJornada(j, resolucionesDe(alertas, j.id));
+                const tarde = minutosTarde(j);
+                const min = minutosTrabajados(j);
+                return (
+                  <article key={j.id} className="card flex min-w-0 flex-col gap-3 !p-4">
+                    <div className="flex items-start gap-3">
                       {mostrarNombre && (
-                        <td>
-                          <Link to={r(`guardia/${j.uid}`)} className="font-bold no-underline">
-                            {j.nombre}
-                          </Link>
-                          <div className="text-xs text-muted">{cdNombre(j.cdId)}</div>
-                        </td>
+                        <Avatar nombre={j.nombre.split(' ')[0]} apellidos={j.nombre.split(' ')[1]} />
                       )}
-                      <td>
-                        {j.turno.nombre}
-                        {j.turno.inicio && (
-                          <div className="tabular text-xs text-muted">
-                            {j.turno.inicio} – {j.turno.fin}
-                          </div>
+                      <div className="min-w-0 flex-1">
+                        {mostrarNombre && (
+                          <>
+                            <Link
+                              to={r(`guardia/${j.uid}`)}
+                              className="block truncate font-bold no-underline"
+                            >
+                              {j.nombre}
+                            </Link>
+                            <div className="truncate text-[13px] text-muted">{cdNombre(j.cdId)}</div>
+                          </>
                         )}
-                      </td>
-                      <td>
-                        <CeldaHora j={j} parte="entrada" alertas={alertas} onEditar={onEditar} />
-                      </td>
-                      <td>
-                        <CeldaHora j={j} parte="salida" alertas={alertas} onEditar={onEditar} />
-                      </td>
-                      <td className="tabular">
-                        {minutosTrabajados(j) != null ? (
-                          duracionTexto(minutosTrabajados(j))
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="flex flex-wrap gap-1">
-                          <Chip tono={est.tono}>{est.texto}</Chip>
-                          {tarde > 0 && <Chip tono="bad">Tarde {tarde} min</Chip>}
-                          {j.editada && (
-                            <Chip tono="warn" className="!text-[11px]">
-                              editada
-                            </Chip>
+                        <div
+                          className={cx(
+                            'tabular truncate text-[13px]',
+                            mostrarNombre ? 'text-muted' : 'font-semibold',
                           )}
+                        >
+                          {j.turno.nombre}
+                          {j.turno.inicio ? ` · ${j.turno.inicio}–${j.turno.fin}` : ''}
                         </div>
-                      </td>
-                      <td>
-                        {onEditar && (
-                          <Button tamano="sm" variante="out" onClick={() => onEditar(j, 'entrada')}>
-                            Editar jornada
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <div className="text-[11px] text-muted">Horas</div>
+                        <div className="tabular text-sm font-bold">
+                          {min != null ? duracionTexto(min) : '—'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <CajaMarca j={j} parte="entrada" alertas={alertas} onEditar={onEditar} />
+                      <CajaMarca j={j} parte="salida" alertas={alertas} onEditar={onEditar} />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
+                      <Chip tono={est.tono}>{est.texto}</Chip>
+                      {tarde > 0 && <Chip tono="bad">Tarde {tarde} min</Chip>}
+                      {j.editada && <Chip tono="warn">editada</Chip>}
+                      {onEditar && (
+                        <Button
+                          tamano="sm"
+                          variante="ghost"
+                          className="ml-auto !px-2"
+                          onClick={() => onEditar(j, 'entrada')}
+                        >
+                          <Icon n="editar" size={14} />
+                          Editar jornada
+                        </Button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
