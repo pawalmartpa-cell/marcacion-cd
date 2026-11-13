@@ -9,8 +9,17 @@ export function ActualizacionPwa() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_url, reg) {
-      // Revisa si hay versión nueva cada hora.
-      if (reg) setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+      if (!reg) return;
+      const revisar = () => {
+        if (navigator.onLine) reg.update().catch(() => {});
+      };
+      // Revisa si hay versión nueva al abrir, al volver a la app y cada 15 minutos.
+      revisar();
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') revisar();
+      });
+      window.addEventListener('online', revisar);
+      setInterval(revisar, 15 * 60 * 1000);
     },
   });
   if (!hayNueva && !listoOffline) return null;
