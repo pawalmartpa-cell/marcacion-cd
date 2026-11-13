@@ -1,0 +1,38 @@
+name: make-admin
+
+# Ejecución manual: da rol Admin y estado Activo al correo indicado.
+# Desde el celular: GitHub → Actions → make-admin → Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: 'Correo de la cuenta (debe haber entrado a la app al menos una vez)'
+        required: true
+        type: string
+      crear_cds:
+        description: 'Crear también los 3 CD del prototipo (Hortifruti 5184, Apopa 7417, San Juan Opico 7018)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+      - name: Dar rol Admin
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          EMAIL: ${{ inputs.email }}
+          CREAR_CDS: ${{ inputs.crear_cds }}
+        run: node scripts/make-admin.mjs

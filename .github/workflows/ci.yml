@@ -1,0 +1,67 @@
+name: CI
+
+# Lint + pruebas + pruebas de reglas en el emulador + build en cada PR (y en ramas de trabajo).
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Lint, pruebas, reglas y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Caché del emulador de Firebase
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: emuladores-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Pruebas unitarias
+        run: npm test
+
+      - name: Pruebas de reglas de Firestore (emulador)
+        run: npm run test:rules
+
+      - name: Build
+        run: npm run build
+
+      - name: Instalar Chromium para las pruebas de punta a punta
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas de punta a punta y accesibilidad (emulador)
+        run: npm run e2e
+
+      - name: Reporte de Playwright (si falla)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Colores en RGB para poder usar opacidad en Tailwind. Contraste AA en claro y oscuro. */
+:root {
+  --bg: 244 246 250;
+  --card: 255 255 255;
+  --text: 4 30 66;
+  --muted: 84 98 122;
+  --line: 226 231 239;
+  --track: 238 242 248;
+  --ok-bg: 231 247 238;
+  --ok: 11 107 58;
+  --warn-bg: 255 246 219;
+  --warn: 92 67 0;
+  --bad-bg: 253 231 228;
+  --bad: 155 28 16;
+  --info-bg: 230 240 251;
+  --info: 0 79 154;
+  color-scheme: light;
+}
+.dark {
+  --bg: 11 26 51;
+  --card: 18 38 74;
+  --text: 234 240 250;
+  --muted: 169 184 211;
+  --line: 36 64 110;
+  --track: 27 51 96;
+  --ok-bg: 16 58 39;
+  --ok: 134 227 176;
+  --warn-bg: 58 46 10;
+  --warn: 255 215 102;
+  --bad-bg: 61 23 18;
+  --bad: 255 180 168;
+  --info-bg: 18 46 85;
+  --info: 169 203 242;
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-bg font-sans text-[14px] text-text antialiased;
+  }
+  h1 {
+    @apply text-[26px] font-extrabold leading-tight;
+  }
+  h2 {
+    @apply text-base font-bold;
+  }
+  a {
+    @apply text-wm-blue;
+  }
+  .dark a {
+    color: rgb(var(--info));
+  }
+  :focus-visible {
+    outline: 3px solid #ffc220;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  input,
+  select,
+  textarea {
+    @apply text-text;
+  }
+}
+
+@layer components {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-card p-[18px];
+  }
+  .input {
+    @apply h-[44px] w-full rounded-[10px] border border-line bg-card px-3 font-medium placeholder:text-muted/80 disabled:opacity-60;
+  }
+  textarea.input {
+    @apply h-auto py-2.5;
+  }
+  .daysep td {
+    @apply bg-track px-2 py-2 text-xs font-bold text-muted;
+  }
+  .tbl th {
+    @apply whitespace-nowrap border-b border-line px-2 py-2.5 text-left text-xs font-semibold text-muted;
+  }
+  .tbl td {
+    @apply whitespace-nowrap border-b border-line px-2 py-[11px] align-middle;
+  }
+  .tbl tr.click {
+    @apply cursor-pointer;
+  }
+  .tbl tr.click:hover td {
+    @apply bg-track;
+  }
+  .sig-box {
+    @apply flex h-[72px] items-center justify-center overflow-hidden rounded-[10px] border border-[#E2E7EF] bg-white;
+  }
+  .sig-box svg {
+    max-height: 100%;
+    max-width: 100%;
+  }
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
+.dark .leaflet-tile {
+  filter: brightness(0.8) contrast(1.1);
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
