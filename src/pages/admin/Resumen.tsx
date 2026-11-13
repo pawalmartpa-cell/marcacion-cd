@@ -5,6 +5,7 @@ import { fechaISO, fechaLarga, hora, sumarDiasISO } from '@/lib/fechas';
 import { estadoJornada, horaEfectiva, jornadaVigente, resolucionesDe } from '@/lib/jornada';
 import { Barra, Card, CardHeader, Cargando, Chip, ErrorBox, Kpi, TablaWrap, Vacio } from '@/components/ui';
 import { usePanel } from './contexto';
+import { Icon } from '@/components/Icon';
 import { Encabezado } from './Panel';
 import { ChipSeveridad } from './comp/ChipsAlerta';
 
@@ -29,18 +30,43 @@ export function Resumen() {
     <>
       <Encabezado titulo="Resumen general" sub={fechaLarga(ahora)} />
       {jornadas.error && <ErrorBox error={jornadas.error} />}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3.5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Link to={r('asistencia')} className="!text-inherit no-underline">
-          <Kpi etiqueta="En turno ahora" valor={enTurno.length} nota="entradas sin salida" />
+          <Kpi
+            etiqueta="En turno ahora"
+            valor={enTurno.length}
+            nota="entradas sin salida"
+            icono={<Icon n="reloj" />}
+            tono="info"
+          />
         </Link>
         <Link to={r('asistencia')} className="!text-inherit no-underline">
-          <Kpi etiqueta="Marcaciones hoy" valor={marcasHoy} nota="GPS y QR" />
+          <Kpi
+            etiqueta="Marcaciones hoy"
+            valor={marcasHoy}
+            nota="GPS y QR"
+            icono={<Icon n="ubicacion" />}
+            tono="ok"
+          />
         </Link>
         <Link to={r('usuarios')} className="!text-inherit no-underline">
-          <Kpi etiqueta="Registros por aprobar" valor={pendientes} nota="cuentas nuevas" />
+          <Kpi
+            etiqueta="Por aprobar"
+            valor={pendientes}
+            nota="cuentas nuevas"
+            icono={<Icon n="users" />}
+            tono="warn"
+          />
         </Link>
         <Link to={r('alertas')} className="!text-inherit no-underline">
-          <Kpi etiqueta="Alertas abiertas" valor={alertasAbiertas.length} nota="revisar hoy" destacado />
+          <Kpi
+            etiqueta="Alertas abiertas"
+            valor={alertasAbiertas.length}
+            nota={alertasAbiertas.length ? 'revisar hoy' : 'todo en orden'}
+            icono={<Icon n="alerta" />}
+            tono="bad"
+            destacado={alertasAbiertas.length > 0}
+          />
         </Link>
       </div>
       <div className="mt-4 flex flex-wrap gap-4">
