@@ -1,0 +1,39 @@
+name: purga
+
+# Limpieza diaria gratuita: borra lo más antiguo que la retención configurada.
+# 05:00 UTC = 23:00 de El Salvador. También se puede ejecutar a mano.
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      simular:
+        description: 'Solo contar (no borra nada)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: purga
+  cancel-in-progress: false
+
+jobs:
+  purga:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+      - name: Borrar datos vencidos
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          SIMULAR: ${{ inputs.simular || 'false' }}
+        run: node scripts/purga.mjs
