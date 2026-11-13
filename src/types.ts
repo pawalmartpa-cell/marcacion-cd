@@ -141,7 +141,8 @@ export interface EntradaBitacora {
 
 export interface Notificacion {
   id: string;
-  para: 'staff' | 'usuario';
+  /** staff = admins y PA del CD · admin = solo administradores · usuario = una persona. */
+  para: 'staff' | 'admin' | 'usuario';
   uid: string | null;
   cdId: string | null;
   tipo: 'firma' | 'registro' | 'alerta' | 'solicitud' | 'firma_habilitada' | 'solicitud_resuelta';

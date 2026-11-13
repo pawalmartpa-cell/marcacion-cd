@@ -89,7 +89,7 @@ function notifEnLote(
   b: WriteBatch,
   creadoPor: string,
   n: {
-    para: 'staff' | 'usuario';
+    para: 'staff' | 'admin' | 'usuario';
     uid?: string | null;
     cdId: string | null;
     tipo: string;
@@ -145,7 +145,7 @@ export async function crearPerfil(u: User, d: DatosPerfil, invitacion: Invitacio
     // Aviso a admins/PA (aparte: si falla, el registro ya quedó hecho).
     const n = writeBatch(db);
     notifEnLote(n, u.uid, {
-      para: 'staff',
+      para: 'admin',
       cdId: perfil.cdId,
       tipo: 'registro',
       texto: `${perfil.nombre} ${perfil.apellidos} se registró y espera aprobación`,
@@ -325,6 +325,14 @@ export function marcar(o: Marcar): ResultadoMarca {
       resueltoPor: null,
       comentario: null,
       creadoEn: serverTimestamp(),
+    });
+    // Aviso en la campana (y en el teléfono) para admins y PA de ese CD.
+    notifEnLote(b, perfil.uid, {
+      para: 'staff',
+      cdId: perfil.cdId,
+      tipo: 'alerta',
+      texto: `${al.severidad === 'alta' ? '⚠️ ' : ''}${nombreCompleto(perfil)}: ${al.texto}`,
+      enlace: `alertas/${jornadaId}_${parte}`,
     });
   }
   const sincronizada = b.commit();
@@ -736,7 +744,7 @@ export async function crearSolicitud(
     creadoEn: serverTimestamp(),
   });
   notifEnLote(b, p.uid, {
-    para: 'staff',
+    para: 'admin',
     cdId: p.cdId,
     tipo: 'solicitud',
     texto: `${nombreCompleto(p)} pidió una corrección del ${d.fecha.split('-').reverse().join('/')}`,

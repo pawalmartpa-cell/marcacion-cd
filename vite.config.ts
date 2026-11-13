@@ -41,6 +41,8 @@ export default defineConfig({
         globIgnores: ['**/exceljs*.js', '**/jspdf*.js', '**/html2canvas*.js', '**/purify*.js'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: '/index.html',
+        // Maneja el toque en las notificaciones del sistema.
+        importScripts: ['sw-avisos.js'],
         navigateFallbackDenylist: [/^\/__/],
         runtimeCaching: [
           {

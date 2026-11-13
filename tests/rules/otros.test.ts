@@ -172,6 +172,45 @@ describe('Notificaciones y solicitudes', () => {
     await assertFails(addDoc(collection(db, 'notificaciones'), notif({ cdId: '7417' })));
     await assertFails(addDoc(collection(db, 'notificaciones'), notif({ para: 'usuario', uid: 'g2' })));
   });
+  it('los avisos "solo admin" no los ve el PA ni el guardia', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'notificaciones/a1'), {
+        ...notif({ para: 'admin', tipo: 'registro', creadoPor: 'gpend' }),
+        creadoEn: Timestamp.now(),
+      });
+    });
+    await assertSucceeds(getDoc(doc(como(env, 'admin').firestore(), 'notificaciones/a1')));
+    await assertFails(getDoc(doc(como(env, 'pa5184').firestore(), 'notificaciones/a1')));
+    await assertFails(getDoc(doc(como(env, 'g1').firestore(), 'notificaciones/a1')));
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(como(env, 'admin').firestore(), 'notificaciones'),
+          where('para', 'in', ['staff', 'admin']),
+        ),
+      ),
+    );
+    await assertFails(
+      getDocs(
+        query(
+          collection(como(env, 'pa5184').firestore(), 'notificaciones'),
+          where('para', '==', 'admin'),
+          where('cdId', '==', '5184'),
+        ),
+      ),
+    );
+  });
+
+  it('el guardia avisa solo a los admins (registro/solicitud) de su CD', async () => {
+    const db = como(env, 'g1').firestore();
+    await assertSucceeds(
+      addDoc(collection(db, 'notificaciones'), notif({ para: 'admin', tipo: 'solicitud' })),
+    );
+    await assertFails(
+      addDoc(collection(db, 'notificaciones'), notif({ para: 'admin', tipo: 'solicitud', cdId: '7417' })),
+    );
+  });
+
   it('el usuario pendiente avisa de su registro', async () => {
     const db = como(env, 'gpend').firestore();
     await assertSucceeds(

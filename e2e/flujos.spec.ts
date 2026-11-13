@@ -124,3 +124,43 @@ test('el PA abre el detalle de un guardia de su CD', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /· \d+ jornadas?$/ }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Bloquear' })).toHaveCount(0);
 });
+
+test('los avisos llegan en vivo y solo a los roles que corresponden', async ({ browser }) => {
+  // Admin y PA de Hortifruti 5184 con la app abierta.
+  const admin = await browser.newPage();
+  await entrar(admin, 'admin.cd@test.com');
+  const pa = await browser.newPage();
+  await entrar(pa, 'rosa.h@test.com');
+  const paOtro = await browser.newPage();
+  await entrar(paOtro, 'mario.c@test.com');
+  const campana = (p: typeof admin) => p.getByRole('button', { name: /^Notificaciones/ });
+  await paOtro.waitForTimeout(2000);
+  const antesPaOtro = await campana(paOtro).getAttribute('aria-label');
+
+  // Un guardia de Hortifruti marca a más de 1 km → alerta.
+  const ctx = await browser.newContext({
+    geolocation: { latitude: 13.6731 + 2000 / 111195, longitude: -89.2794 },
+    permissions: ['geolocation'],
+  });
+  const g = await ctx.newPage();
+  await entrar(g, 'carlos.mendez@test.com');
+  await g.getByRole('button', { name: 'Diurno' }).click();
+  await g.getByRole('button', { name: 'Marcar entrada' }).click();
+  await expect(g.getByText(/Entrada registrada ·/)).toBeVisible();
+
+  // Sin recargar: el admin y el PA de Hortifruti reciben el aviso; el PA de otro CD no.
+  await expect(admin.getByText(/Carlos Méndez: Entrada marcada a/)).toBeVisible({ timeout: 15_000 });
+  await expect(pa.getByText(/Carlos Méndez: Entrada marcada a/)).toBeVisible({ timeout: 15_000 });
+  await paOtro.waitForTimeout(1500);
+  expect(await campana(paOtro).getAttribute('aria-label')).toBe(antesPaOtro);
+
+  // Una solicitud de corrección solo le llega al admin.
+  await g.goto('/app/solicitudes');
+  await g.getByLabel('Explica (con la hora real)').fill('Salí a las 14:00 pero no tenía señal');
+  await g.getByRole('button', { name: 'Enviar solicitud' }).click();
+  await expect(admin.getByText(/Carlos Méndez pidió una corrección/)).toBeVisible({ timeout: 15_000 });
+  await pa.waitForTimeout(1500);
+  await campana(pa).click();
+  await expect(pa.getByRole('dialog').getByText(/pidió una corrección/)).toHaveCount(0);
+  await ctx.close();
+});

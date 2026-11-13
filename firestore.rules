@@ -393,8 +393,8 @@ service cloud.firestore {
         && textoOpcional(request.resource.data.enlace, 200)
         && request.resource.data.tipo in ['firma', 'registro', 'alerta', 'solicitud', 'firma_habilitada', 'solicitud_resuelta']
         && (
-          // Avisos para admins y PA del CD: cualquiera con perfil, sobre su propio CD.
-          (request.resource.data.para == 'staff' && request.resource.data.uid == null
+          // Avisos para admins y PA del CD ('staff') o solo para admins ('admin'): cualquiera con perfil, sobre su CD.
+          (request.resource.data.para in ['staff', 'admin'] && request.resource.data.uid == null
             && (esAdmin() || request.resource.data.cdId == perfil().cdId))
           // Avisos para un usuario: solo admin o PA.
           || (request.resource.data.para == 'usuario' && request.resource.data.uid is string
@@ -410,6 +410,7 @@ service cloud.firestore {
 
       function puedeVerNotif(n) {
         return (n.para == 'usuario' && n.uid == yo())
+          || (n.para == 'admin' && esAdmin())
           || (n.para == 'staff' && (esAdmin() || (esPA() && n.cdId == perfil().cdId)));
       }
     }
