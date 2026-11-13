@@ -3,7 +3,7 @@ import { useAhora } from '@/data/hooks';
 import { useJornadas } from '@/data/consultas';
 import { fechaISO, fechaLarga, hora, sumarDiasISO } from '@/lib/fechas';
 import { estadoJornada, horaEfectiva, jornadaVigente, resolucionesDe } from '@/lib/jornada';
-import { Barra, Card, CardHeader, Cargando, Chip, ErrorBox, Kpi, TablaWrap, Vacio } from '@/components/ui';
+import { Avatar, Barra, Card, CardHeader, Cargando, Chip, ErrorBox, Kpi, Vacio } from '@/components/ui';
 import { usePanel } from './contexto';
 import { Icon } from '@/components/Icon';
 import { Encabezado } from './Panel';
@@ -143,37 +143,34 @@ export function Resumen() {
         ) : deHoy.length === 0 ? (
           <Vacio titulo="Aún no hay marcaciones hoy" />
         ) : (
-          <TablaWrap>
-            <thead>
-              <tr>
-                <th>Guardia</th>
-                <th>CD</th>
-                <th>Turno</th>
-                <th>Entrada</th>
-                <th>Salida</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deHoy.slice(0, 12).map((j) => {
-                const e = estadoJornada(j, resolucionesDe(alertasAbiertas, j.id), ahora);
-                return (
-                  <tr key={j.id} className="click" onClick={() => nav(r(`guardia/${j.uid}`))}>
-                    <td>
-                      <b>{j.nombre}</b>
-                    </td>
-                    <td>{cdNombre(j.cdId)}</td>
-                    <td>{j.turno.nombre}</td>
-                    <td className="tabular font-bold">{hora(horaEfectiva(j.entrada))}</td>
-                    <td className="tabular font-bold">{j.salida ? hora(horaEfectiva(j.salida)) : '—'}</td>
-                    <td>
-                      <Chip tono={e.tono}>{e.texto}</Chip>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </TablaWrap>
+          <ul className="flex flex-col gap-2">
+            {deHoy.slice(0, 12).map((j) => {
+              const e = estadoJornada(j, resolucionesDe(alertasAbiertas, j.id), ahora);
+              return (
+                <li key={j.id}>
+                  <button
+                    type="button"
+                    onClick={() => nav(r(`guardia/${j.uid}`))}
+                    className="flex w-full items-center gap-3 rounded-xl border border-line p-3 text-left hover:bg-track"
+                  >
+                    <Avatar nombre={j.nombre.split(' ')[0]} apellidos={j.nombre.split(' ')[1]} />
+                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                      <span className="block w-full truncate font-bold">{j.nombre}</span>
+                      <span className="block w-full truncate text-xs text-muted">
+                        {cdNombre(j.cdId)} · {j.turno.nombre}
+                      </span>
+                      <Chip tono={e.tono} className="!px-2 !py-0.5 !text-[11px]">
+                        {e.texto}
+                      </Chip>
+                    </span>
+                    <span className="tabular shrink-0 self-start text-sm font-bold">
+                      {hora(horaEfectiva(j.entrada))} → {j.salida ? hora(horaEfectiva(j.salida)) : '—'}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </Card>
     </>

@@ -23,7 +23,6 @@ import {
   Chip,
   ErrorBox,
   Field,
-  TablaWrap,
   Vacio,
   mensajeError,
   useToast,
@@ -241,44 +240,33 @@ export function Reportes() {
           />
           {preview ? (
             <>
-              <div className="overflow-x-auto rounded-[10px] border border-line">
-                <table className="tbl w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-wm-blue">
-                      {preview.columnas.map((c) => (
-                        <th key={c} className="!text-white">
-                          {c}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.filas.length === 0 && (
-                      <tr>
-                        <td colSpan={preview.columnas.length} className="text-muted">
-                          Sin datos en el rango elegido.
-                        </td>
-                      </tr>
-                    )}
-                    {preview.filas.map((f, i) => (
-                      <tr key={i}>
+              {preview.filas.length === 0 ? (
+                <p className="text-muted">Sin datos en el rango elegido.</p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {preview.filas.map((f, i) => (
+                    <li key={i} className="rounded-xl border border-line p-3">
+                      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
                         {f.map((v, k) => (
-                          <td key={k}>
-                            {k === preview.colFirma ? (
-                              <FirmaVista
-                                firma={usuario(preview.uids?.[i] ?? '')?.firma}
-                                className="!h-9 !w-32 [&_span]:!text-lg"
-                              />
-                            ) : (
-                              v
-                            )}
-                          </td>
+                          <div key={k} className="contents">
+                            <dt className="text-muted">{preview.columnas[k]}</dt>
+                            <dd className="min-w-0 break-words font-semibold">
+                              {k === preview.colFirma ? (
+                                <FirmaVista
+                                  firma={usuario(preview.uids?.[i] ?? '')?.firma}
+                                  className="!h-10 !w-40 [&_span]:!text-lg"
+                                />
+                              ) : (
+                                v
+                              )}
+                            </dd>
+                          </div>
                         ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                      </dl>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <span className="text-xs text-muted">
                 Mostrando {preview.filas.length} de {preview.total} filas.
               </span>
@@ -302,59 +290,47 @@ export function Reportes() {
         ) : historial.datos.length === 0 ? (
           <Vacio titulo="Aún no se han generado reportes" />
         ) : (
-          <TablaWrap>
-            <thead>
-              <tr>
-                <th>Reporte</th>
-                <th>Rango</th>
-                <th>Formato</th>
-                <th>Generado por</th>
-                <th>Fecha</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {historial.datos.map((h: ReporteGenerado) => (
-                <tr key={h.id}>
-                  <td className="font-bold">{h.nombre}</td>
-                  <td className="tabular">
+          <ul className="grid gap-2 lg:grid-cols-2">
+            {historial.datos.map((h: ReporteGenerado) => (
+              <li key={h.id} className="flex flex-col gap-2 rounded-xl border border-line p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <b className="min-w-0 break-words">{h.nombre}</b>
+                  <Chip tono={h.formato === 'Excel' ? 'ok' : 'bad'}>{h.formato}</Chip>
+                </div>
+                <div className="text-xs text-muted">
+                  <span className="tabular">
                     {fechaCorta(h.desde)} – {fechaCorta(h.hasta)}
-                  </td>
-                  <td>
-                    <Chip tono={h.formato === 'Excel' ? 'ok' : 'bad'}>{h.formato}</Chip>
-                  </td>
-                  <td>{h.porNombre}</td>
-                  <td className="tabular">{fechaHora(h.fecha)}</td>
-                  <td>
-                    <Button
-                      tamano="sm"
-                      variante="out"
-                      disabled={!!generando || (h.cdId != null && !cd(h.cdId))}
-                      cargando={generando === h.formato + h.desde}
-                      onClick={() =>
-                        generar(
-                          h.formato,
-                          {
-                            tipo: h.tipo as TipoReporte,
-                            formato: h.formato,
-                            desde: h.desde,
-                            hasta: h.hasta,
-                            cdId: h.cdId,
-                            uidGuardia: h.uidGuardia,
-                            incluirFirma: h.incluirFirma,
-                          },
-                          false,
-                        )
-                      }
-                    >
-                      <Icon n="descargar" size={16} />
-                      Descargar
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </TablaWrap>
+                  </span>{' '}
+                  · {h.porNombre} · <span className="tabular">{fechaHora(h.fecha)}</span>
+                </div>
+                <Button
+                  tamano="sm"
+                  variante="out"
+                  className="self-start"
+                  disabled={!!generando || (h.cdId != null && !cd(h.cdId))}
+                  cargando={generando === h.formato + h.desde}
+                  onClick={() =>
+                    generar(
+                      h.formato,
+                      {
+                        tipo: h.tipo as TipoReporte,
+                        formato: h.formato,
+                        desde: h.desde,
+                        hasta: h.hasta,
+                        cdId: h.cdId,
+                        uidGuardia: h.uidGuardia,
+                        incluirFirma: h.incluirFirma,
+                      },
+                      false,
+                    )
+                  }
+                >
+                  <Icon n="descargar" size={16} />
+                  Descargar de nuevo
+                </Button>
+              </li>
+            ))}
+          </ul>
         )}
       </Card>
     </>

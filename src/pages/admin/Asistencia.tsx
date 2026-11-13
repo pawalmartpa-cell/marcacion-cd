@@ -49,7 +49,7 @@ export function Asistencia() {
     <>
       <Encabezado titulo="Registros de asistencia" sub="Entrada y salida de cada turno en una tarjeta" />
       <div className="mb-4 flex flex-col gap-3">
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div>
           <Tabs
             label="Periodo"
             valor={rango}

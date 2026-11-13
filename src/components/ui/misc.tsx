@@ -93,7 +93,7 @@ export function Tabs<T extends string>({
 }) {
   return (
     <div
-      className="inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-track p-1"
+      className="inline-flex max-w-full flex-wrap gap-1 rounded-xl bg-track p-1"
       role="tablist"
       aria-label={label}
     >

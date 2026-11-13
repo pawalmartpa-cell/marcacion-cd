@@ -14,7 +14,7 @@ import {
   ErrorBox,
   Field,
   LinkButton,
-  TablaWrap,
+  Avatar,
   Vacio,
   mensajeError,
   useToast,
@@ -382,37 +382,33 @@ export function CdDetalle({ nuevo }: { nuevo?: boolean }) {
       {!nuevo && (
         <Card className="mt-4">
           <CardHeader titulo={`Guardias de este CD (${guardias.length})`} />
-          <TablaWrap>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Estado</th>
-                <th>Firma</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {guardias.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="text-muted">
-                    Sin guardias asignados.
-                  </td>
-                </tr>
-              )}
+          {guardias.length === 0 ? (
+            <p className="text-muted">Sin guardias asignados.</p>
+          ) : (
+            <ul className="grid gap-2 md:grid-cols-2">
               {guardias.map((u) => (
-                <tr key={u.uid} className="click" onClick={() => nav(r(`guardia/${u.uid}`))}>
-                  <td>
-                    <b>{nombreCompleto(u)}</b>
-                  </td>
-                  <td>
+                <li key={u.uid}>
+                  <button
+                    type="button"
+                    onClick={() => nav(r(`guardia/${u.uid}`))}
+                    className="flex w-full items-center gap-3 rounded-xl border border-line p-3 text-left hover:bg-track"
+                  >
+                    <Avatar nombre={u.nombre} apellidos={u.apellidos} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-bold">{nombreCompleto(u)}</span>
+                      <span className="block text-xs text-muted">
+                        Firma {u.firma ? 'registrada' : 'pendiente'}
+                      </span>
+                    </span>
                     <Chip tono={TONO_ESTADO[u.estado]}>{ESTADO_USUARIO_TEXTO[u.estado]}</Chip>
-                  </td>
-                  <td>{u.firma ? 'Registrada' : <span className="text-muted">Pendiente</span>}</td>
-                  <td className="text-right text-muted">Ver ›</td>
-                </tr>
+                    <span className="text-muted" aria-hidden>
+                      ›
+                    </span>
+                  </button>
+                </li>
               ))}
-            </tbody>
-          </TablaWrap>
+            </ul>
+          )}
         </Card>
       )}
     </>

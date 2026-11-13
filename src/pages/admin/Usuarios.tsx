@@ -92,7 +92,7 @@ export function Usuarios() {
     <>
       <Encabezado titulo="Usuarios" sub="Aprobar registros, roles, CD asignado y bloqueo" />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div>
           <Tabs
             label="Estado de los usuarios"
             valor={tab}

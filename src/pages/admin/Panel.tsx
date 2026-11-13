@@ -159,8 +159,12 @@ export function Encabezado({
         </div>
       </div>
       {conFiltro && (
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div className="inline-flex gap-1 rounded-xl bg-track p-1" role="group" aria-label="Filtrar por CD">
+        <div>
+          <div
+            className="inline-flex max-w-full flex-wrap gap-1 rounded-xl bg-track p-1"
+            role="group"
+            aria-label="Filtrar por CD"
+          >
             {opciones.map(([id, txt]) => (
               <button
                 key={txt}
