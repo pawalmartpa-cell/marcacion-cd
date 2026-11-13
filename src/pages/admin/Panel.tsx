@@ -3,7 +3,7 @@ import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-route
 import { useAuth, usePerfil, nombreCompleto } from '@/auth/AuthProvider';
 import { Icon, Logo, type NombreIcono } from '@/components/Icon';
 import { CampanaNotificaciones } from '@/components/Notificaciones';
-import { Avatar, Pill, cx } from '@/components/ui';
+import { Avatar, cx } from '@/components/ui';
 import { BannerConexion } from '@/components/BannerConexion';
 import { PanelProvider, usePanel } from './contexto';
 import { Resumen } from './Resumen';
@@ -131,40 +131,55 @@ export function Encabezado({
 }) {
   const { esAdmin, cds, cdFiltro, setCdFiltro, base } = usePanel();
   const abrirMenu = useContext(AbrirMenu);
+  const conFiltro = !acciones && !sinFiltro && esAdmin && cds.length > 0;
+  const opciones: Array<[string | null, string]> = [
+    [null, 'Todos'],
+    ...cds.map((c) => [c.id, `CD ${c.codigo}`] as [string, string]),
+  ];
   return (
-    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <div className="mb-5 flex flex-col gap-3">
       <div className="flex items-start gap-3">
         <button
           type="button"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-line bg-card lg:hidden"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-line bg-card lg:hidden"
           aria-label="Abrir menú"
           aria-controls="menu-lateral"
           onClick={abrirMenu}
         >
           <Icon n="menu" size={20} />
         </button>
-        <div>
-          {crumb && <div className="mb-1 text-[13px] text-muted">{crumb}</div>}
-          <h1>{titulo}</h1>
-          {sub && <div className="mt-1 text-muted">{sub}</div>}
+        <div className="min-w-0 flex-1">
+          {crumb && <div className="mb-0.5 truncate text-xs text-muted sm:text-[13px]">{crumb}</div>}
+          <h1 className="!text-[21px] leading-tight sm:!text-[26px]">{titulo}</h1>
+          {sub && <div className="mt-0.5 text-[13px] text-muted sm:text-sm">{sub}</div>}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {acciones}
+          <CampanaNotificaciones base={base} />
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {acciones}
-        {!acciones && !sinFiltro && esAdmin && (
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por CD">
-            <Pill activo={cdFiltro === null} onClick={() => setCdFiltro(null)}>
-              Todos los CD
-            </Pill>
-            {cds.map((c) => (
-              <Pill key={c.id} activo={cdFiltro === c.id} onClick={() => setCdFiltro(c.id)}>
-                CD {c.codigo}
-              </Pill>
+      {conFiltro && (
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div className="inline-flex gap-1 rounded-xl bg-track p-1" role="group" aria-label="Filtrar por CD">
+            {opciones.map(([id, txt]) => (
+              <button
+                key={txt}
+                type="button"
+                aria-pressed={cdFiltro === id}
+                onClick={() => setCdFiltro(id)}
+                className={cx(
+                  'h-8 whitespace-nowrap rounded-lg px-3 text-[13px] font-semibold transition-colors',
+                  cdFiltro === id
+                    ? 'bg-card text-wm-blue shadow-sm dark:bg-wm-blue dark:text-white'
+                    : 'text-muted hover:text-text',
+                )}
+              >
+                {txt}
+              </button>
             ))}
           </div>
-        )}
-        <CampanaNotificaciones base={base} />
-      </div>
+        </div>
+      )}
     </div>
   );
 }
