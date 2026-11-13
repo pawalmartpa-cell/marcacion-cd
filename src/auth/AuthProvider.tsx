@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { desactivarPush } from '@/lib/push';
 import { ref } from '@/data/refs';
 import { useDocumento } from '@/data/hooks';
 import { CONFIG_POR_DEFECTO, type ConfigGeneral, type Usuario } from '@/types';
@@ -40,7 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       usuario,
       perfil: perfilDoc.datos ? { ...perfilDoc.datos, uid: perfilDoc.datos.id } : null,
       config: { ...CONFIG_POR_DEFECTO, ...(configDoc.datos ?? {}) },
-      salir: () => signOut(auth),
+      salir: async () => {
+        await desactivarPush().catch(() => {});
+        await signOut(auth);
+      },
       recargarUsuario: async () => {
         await auth.currentUser?.reload();
         // Renueva el token para que las reglas vean email_verified actualizado.

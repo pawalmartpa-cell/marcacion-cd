@@ -1,0 +1,12 @@
+# Worker gratuito de Cloudflare que envía las notificaciones push (FCM) de Marcación CD.
+# Lo despliega el workflow .github/workflows/avisos.yml. La llave (SERVICE_ACCOUNT) se carga
+# como secreto del Worker desde GitHub; nunca se guarda en el repositorio.
+name = "marcacion-avisos"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+
+# Respaldo: cada minuto revisa si quedó algún aviso sin enviar (marcas que se sincronizaron tarde,
+# avisos de la limpieza nocturna, fallas de red).
+[triggers]
+crons = ["* * * * *"]

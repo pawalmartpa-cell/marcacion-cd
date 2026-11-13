@@ -18,7 +18,8 @@
     "test:rules": "firebase emulators:exec --only firestore --project demo-marcacion \"vitest run --config vitest.rules.config.ts\"",
     "emulators": "firebase emulators:start --project demo-marcacion",
     "seed": "node scripts/seed-emulator.mjs",
-    "e2e": "firebase emulators:exec --only firestore,auth --project demo-marcacion \"playwright test\""
+    "e2e": "firebase emulators:exec --only firestore,auth --project demo-marcacion \"playwright test\"",
+    "test:avisos": "firebase emulators:exec --only firestore --project demo-marcacion \"vitest run --config vitest.avisos.config.ts\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

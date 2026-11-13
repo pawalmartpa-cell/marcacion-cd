@@ -19,6 +19,7 @@ sueldos ni horas extras**, solo registra la marcación.
 |---|---|
 | [docs/configuracion-firebase.md](docs/configuracion-firebase.md) | **Empieza aquí**: pasos desde el celular para crear Firebase, cargar secretos y crear el primer admin. |
 | [docs/manual-uso.md](docs/manual-uso.md) | Manual corto por rol. |
+| [docs/notificaciones-push.md](docs/notificaciones-push.md) | Avisos en el teléfono con la app cerrada (Cloudflare + FCM, gratis). |
 | [docs/modelo-datos.md](docs/modelo-datos.md) | Colecciones, campos y permisos. |
 | [docs/estimacion-costos.md](docs/estimacion-costos.md) | Lecturas, escrituras y borrados frente al plan gratis. |
 | [docs/prototipo-admin.html](docs/prototipo-admin.html) | Prototipo de referencia del panel. |
@@ -50,6 +51,7 @@ La protección real está en [`firestore.rules`](firestore.rules), no en la inte
 | `ci.yml` | Cada PR | Lint, pruebas unitarias, pruebas de reglas en el emulador, build, E2E y accesibilidad. |
 | `deploy.yml` | Push a `main` | Despliega Hosting, `firestore.rules` y `firestore.indexes.json`. |
 | `make-admin.yml` | Manual | Da rol Admin a un correo (y opcionalmente crea los CD del prototipo). |
+| `avisos.yml` | Cambios en `worker/` + manual | Despliega el Worker de Cloudflare que envía las notificaciones push. |
 | `purga.yml` | 23:00 diario + manual | Borra lo vencido según la retención (lotes de 400, máx. 19 000/día) y crea alertas de salida sin marcar. |
 
 ## Desarrollo (opcional, en Claude Code o una PC)

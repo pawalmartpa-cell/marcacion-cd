@@ -454,6 +454,20 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ============================================================ TOKENS PUSH
+    // Un documento por teléfono (id = token de FCM). Solo el Worker de avisos los lee todos
+    // (con la cuenta de servicio); cada usuario solo maneja el suyo.
+    match /tokensPush/{token} {
+      allow read: if signedIn() && resource.data.uid == yo();
+      allow create, update: if tienePerfil()
+        && token.size() <= 400
+        && request.resource.data.keys().hasOnly(['uid', 'dispositivo', 'actualizadoEn'])
+        && request.resource.data.uid == yo()
+        && textoValido(request.resource.data.dispositivo, 1, 40)
+        && request.resource.data.actualizadoEn == request.time;
+      allow delete: if signedIn() && resource.data.uid == yo();
+    }
+
     // ================================================================= CONFIG
     match /config/{docId} {
       // Nombre de la app y tema se muestran incluso antes de iniciar sesión.

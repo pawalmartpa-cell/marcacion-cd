@@ -273,22 +273,20 @@ const L = (
   cdId = null,
   motivo = null,
 ) =>
-  db
-    .collection('bitacora')
-    .add({
-      quien,
-      quienNombre,
-      rol,
-      accion: 'semilla',
-      detalle,
-      motivo,
-      refTipo: null,
-      refId: null,
-      cdId,
-      antes: null,
-      despues: null,
-      fecha: FieldValue.serverTimestamp(),
-    });
+  db.collection('bitacora').add({
+    quien,
+    quienNombre,
+    rol,
+    accion: 'semilla',
+    detalle,
+    motivo,
+    refTipo: null,
+    refId: null,
+    cdId,
+    antes: null,
+    despues: null,
+    fecha: FieldValue.serverTimestamp(),
+  });
 await L('Aprobó el registro de Sofía Guzmán (Seguridad · San Juan Opico 7018)');
 await db.doc('bitacora/semilla-log').set({
   quien: 'admin',

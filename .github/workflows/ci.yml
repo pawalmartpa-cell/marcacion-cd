@@ -49,6 +49,9 @@ jobs:
       - name: Pruebas de reglas de Firestore (emulador)
         run: npm run test:rules
 
+      - name: Pruebas del Worker de avisos (emulador)
+        run: npm run test:avisos
+
       - name: Build
         run: npm run build
 
