@@ -121,6 +121,6 @@ test('el PA abre el detalle de un guardia de su CD', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Carlos Méndez' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Jornadas' })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await expect(page.getByRole('row', { name: /· \d+ jornadas?$/ }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: /· \d+ jornadas?$/ }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Bloquear' })).toHaveCount(0);
 });

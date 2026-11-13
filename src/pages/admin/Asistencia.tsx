@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useAlertas, useJornadas } from '@/data/consultas';
 import { fechaISO, lunesDeISO, sumarDiasISO } from '@/lib/fechas';
 import { ESTADO_MARCA, estadoJornada, resolucionesDe } from '@/lib/jornada';
-import { Card, Cargando, ErrorBox, Leyenda, Pill, Tabs } from '@/components/ui';
+import { Cargando, ErrorBox, Leyenda, Pill, Tabs } from '@/components/ui';
+import { Icon } from '@/components/Icon';
 import type { Jornada, Parte } from '@/types';
 import { usePanel } from './contexto';
 import { Encabezado } from './Panel';
@@ -46,16 +47,9 @@ export function Asistencia() {
 
   return (
     <>
-      <Encabezado
-        titulo="Registros de asistencia"
-        sub={
-          esAdmin
-            ? 'Una fila por jornada: entrada y salida juntas. Toca una hora para corregirla.'
-            : 'Una fila por jornada: entrada y salida juntas.'
-        }
-      />
-      <Card>
-        <div className="mb-3 flex flex-wrap items-center gap-2.5">
+      <Encabezado titulo="Registros de asistencia" sub="Entrada y salida de cada turno en una tarjeta" />
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <Tabs
             label="Periodo"
             valor={rango}
@@ -67,60 +61,68 @@ export function Asistencia() {
               { valor: 'rango', texto: 'Rango' },
             ]}
           />
-          {rango === 'rango' && (
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="date"
-                className="input !h-10 !w-auto"
-                value={desdeR}
-                max={hoy}
-                onChange={(e) => setDesdeR(e.target.value)}
-                aria-label="Desde"
-              />
-              <span className="text-muted">a</span>
-              <input
-                type="date"
-                className="input !h-10 !w-auto"
-                value={hastaR}
-                max={hoy}
-                onChange={(e) => setHastaR(e.target.value)}
-                aria-label="Hasta"
-              />
-            </div>
-          )}
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar guardia"
-            aria-label="Buscar guardia"
-            className="input !h-10 !w-[200px]"
-          />
-          <Pill activo={soloPend} onClick={() => setSoloPend((v) => !v)}>
-            Solo con pendientes ({conPend.length})
-          </Pill>
-          <span className="flex-1" />
-          {esAdmin ? (
-            <span className="text-xs text-muted">Toda corrección pide motivo y queda en la bitácora</span>
-          ) : (
-            <span className="text-xs text-muted">Solo lectura: las horas las corrige un administrador</span>
-          )}
         </div>
-        <div className="mb-2.5">
-          <Leyenda items={LEYENDA_ZONAS} />
-        </div>
-        {jornadas.error ? (
-          <ErrorBox error={jornadas.error} />
-        ) : jornadas.cargando ? (
-          <Cargando />
-        ) : (
-          <TablaJornadas
-            jornadas={filas}
-            alertas={alertas.datos}
-            onEditar={esAdmin ? (j, foco) => setEditando({ j, foco }) : undefined}
-          />
+        {rango === 'rango' && (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              className="input !h-10 flex-1"
+              value={desdeR}
+              max={hoy}
+              onChange={(e) => setDesdeR(e.target.value)}
+              aria-label="Desde"
+            />
+            <span className="text-muted">a</span>
+            <input
+              type="date"
+              className="input !h-10 flex-1"
+              value={hastaR}
+              max={hoy}
+              onChange={(e) => setHastaR(e.target.value)}
+              aria-label="Hasta"
+            />
+          </div>
         )}
-      </Card>
+        <div className="flex gap-2">
+          <label className="relative flex-1">
+            <span className="sr-only">Buscar guardia</span>
+            <Icon
+              n="buscar"
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar guardia"
+              className="input !h-10 !pl-9"
+            />
+          </label>
+          <Pill activo={soloPend} onClick={() => setSoloPend((v) => !v)} className="!h-10 shrink-0">
+            Pendientes ({conPend.length})
+          </Pill>
+        </div>
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+          <Leyenda items={LEYENDA_ZONAS} />
+          <span className="text-xs text-muted">
+            {esAdmin
+              ? 'Toca una hora para corregirla · toda corrección pide motivo'
+              : 'Solo lectura: las horas las corrige un administrador'}
+          </span>
+        </div>
+      </div>
+      {jornadas.error ? (
+        <ErrorBox error={jornadas.error} />
+      ) : jornadas.cargando ? (
+        <Cargando />
+      ) : (
+        <TablaJornadas
+          jornadas={filas}
+          alertas={alertas.datos}
+          onEditar={esAdmin ? (j, foco) => setEditando({ j, foco }) : undefined}
+        />
+      )}
       <EditarJornada
         jornada={editando?.j ?? null}
         foco={editando?.foco ?? 'entrada'}
