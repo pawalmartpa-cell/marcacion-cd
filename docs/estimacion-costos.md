@@ -41,6 +41,14 @@ más usuarios con firma (≈ 9 KB c/u), alertas y bitácora → < 30 MB.
 **Hosting**: la app completa pesa ≈ 2.5 MB (los teléfonos de guardias no descargan las librerías
 de Excel/PDF). Se descarga una vez por teléfono y luego solo lo que cambia en cada versión.
 
+## Notificaciones push (Cloudflare Worker + FCM)
+
+- FCM: gratis y sin límite.
+- Cloudflare Workers gratis: 100 000 solicitudes al día. Se usan ≈ 1 440 por el respaldo de cada
+  minuto más una por aviso, menos del 2 %.
+- Firestore: el respaldo de cada minuto cuesta ≈ 1 lectura (≈ 1 440 al día) y cada aviso enviado
+  ≈ 5–10 lecturas y 2 escrituras. Aun así el total queda muy por debajo del límite gratis.
+
 ## Cómo mantenerlo en $0
 
 - No cambies el plan a Blaze (no hace falta para nada de esta app).

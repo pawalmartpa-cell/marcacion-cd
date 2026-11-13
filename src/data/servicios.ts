@@ -35,6 +35,7 @@ import { nombreCompleto } from '@/auth/AuthProvider';
 import type { FirmaBorrador } from '@/components/FirmaEditor';
 import { generarLote } from '@/lib/qr';
 import { horaEfectiva as horaVista } from '@/lib/jornada';
+import { avisarPush } from '@/lib/push';
 
 // ---------------------------------------------------------------- bitácora
 export interface Actor {
@@ -151,7 +152,7 @@ export async function crearPerfil(u: User, d: DatosPerfil, invitacion: Invitacio
       texto: `${perfil.nombre} ${perfil.apellidos} se registró y espera aprobación`,
       enlace: 'usuarios',
     });
-    await n.commit().catch((e) => console.warn(e));
+    await n.commit().then(avisarPush, (e) => console.warn(e));
   }
 }
 
@@ -181,7 +182,7 @@ export async function cambiarFirma(p: Usuario, f: FirmaBorrador) {
     texto: `${nombreCompleto(p)} cambió su firma`,
     enlace: `guardia/${p.uid}`,
   });
-  await n.commit().catch((e) => console.warn(e));
+  await n.commit().then(avisarPush, (e) => console.warn(e));
 }
 
 export async function vincularDispositivo(p: Usuario, deviceId: string) {
@@ -336,6 +337,8 @@ export function marcar(o: Marcar): ResultadoMarca {
     });
   }
   const sincronizada = b.commit();
+  // Al llegar al servidor (al instante, o al reconectar), pide al Worker que envíe la alerta.
+  if (al) sincronizada.then(avisarPush, () => {});
   return { jornadaId, parte, marca: m, sincronizada };
 }
 
@@ -561,6 +564,7 @@ export async function habilitarCambioFirma(actor: Actor, u: Usuario) {
     enlace: 'firma',
   });
   await b.commit();
+  avisarPush();
 }
 
 export async function aprobarDispositivo(actor: Actor, u: Usuario, nuevo: string) {
@@ -751,6 +755,7 @@ export async function crearSolicitud(
     enlace: 'solicitudes',
   });
   await b.commit();
+  avisarPush();
 }
 
 export async function resolverSolicitud(
@@ -782,6 +787,7 @@ export async function resolverSolicitud(
     enlace: 'solicitudes',
   });
   await b.commit();
+  avisarPush();
 }
 
 // ---------------------------------------------------------------- notificaciones y reportes

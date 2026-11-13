@@ -1,0 +1,71 @@
+name: avisos
+
+# Despliega el Worker gratuito de Cloudflare que envía las notificaciones push (FCM).
+# Se ejecuta solo cuando cambia worker/ en main, o a mano desde Actions → avisos → Run workflow.
+on:
+  push:
+    branches: [main]
+    paths: ['worker/**', '.github/workflows/avisos.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avisos
+  cancel-in-progress: false
+
+jobs:
+  desplegar:
+    name: Desplegar el Worker de avisos
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Revisar secretos
+        run: |
+          faltan=""
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && faltan="$faltan CLOUDFLARE_API_TOKEN"
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && faltan="$faltan CLOUDFLARE_ACCOUNT_ID"
+          [ -z "$SA" ] && faltan="$faltan FIREBASE_SERVICE_ACCOUNT"
+          if [ -n "$faltan" ]; then
+            echo "::error::Faltan secretos en GitHub:$faltan. Sigue docs/notificaciones-push.md."
+            exit 1
+          fi
+
+      - name: Desplegar el Worker
+        working-directory: worker
+        run: |
+          set -o pipefail
+          npx --yes wrangler@3.114.17 deploy 2>&1 | tee deploy.log
+          URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          if [ -z "$URL" ]; then
+            echo "::error::No se obtuvo la dirección del Worker. Entra una vez a Cloudflare → Workers & Pages para crear tu subdominio workers.dev y vuelve a ejecutar."
+            exit 1
+          fi
+          echo "PUSH_URL=$URL" >> "$GITHUB_ENV"
+
+      - name: Guardar la llave de Firebase en el Worker (secreto)
+        working-directory: worker
+        run: printf '%s' "$SA" | npx --yes wrangler@3.114.17 secret put SERVICE_ACCOUNT
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      - name: Avisar a la app la dirección del Worker
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/config-push.mjs
+
+      - name: Probar que responde
+        run: curl -fsS "$PUSH_URL/" && echo "### ✅ Avisos push activos en $PUSH_URL" >> "$GITHUB_STEP_SUMMARY"

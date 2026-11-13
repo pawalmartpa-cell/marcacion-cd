@@ -267,3 +267,25 @@ describe('Notificaciones y solicitudes', () => {
     );
   });
 });
+
+describe('Tokens push', () => {
+  const tok = (uid: string, extra: Record<string, unknown> = {}) => ({
+    uid,
+    dispositivo: 'Android',
+    actualizadoEn: serverTimestamp(),
+    ...extra,
+  });
+  it('cada usuario registra y borra solo su teléfono', async () => {
+    const db = como(env, 'pa5184').firestore();
+    await assertSucceeds(setDoc(doc(db, 'tokensPush/abc:123'), tok('pa5184')));
+    await assertSucceeds(getDoc(doc(db, 'tokensPush/abc:123')));
+    await assertFails(setDoc(doc(db, 'tokensPush/xyz'), tok('admin')));
+    await assertFails(setDoc(doc(db, 'tokensPush/xyz'), tok('pa5184', { actualizadoEn: Timestamp.now() })));
+    await assertFails(getDoc(doc(como(env, 'g1').firestore(), 'tokensPush/abc:123')));
+    await assertFails(deleteDoc(doc(como(env, 'g1').firestore(), 'tokensPush/abc:123')));
+    await assertSucceeds(deleteDoc(doc(db, 'tokensPush/abc:123')));
+  });
+  it('nadie lista los tokens de otros desde la app', async () => {
+    await assertFails(getDocs(collection(como(env, 'admin').firestore(), 'tokensPush')));
+  });
+});

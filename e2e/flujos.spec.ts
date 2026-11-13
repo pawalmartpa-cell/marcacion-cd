@@ -144,13 +144,19 @@ test('los avisos llegan en vivo y solo a los roles que corresponden', async ({ b
   });
   const g = await ctx.newPage();
   await entrar(g, 'carlos.mendez@test.com');
-  await g.getByRole('button', { name: 'Diurno' }).click();
-  await g.getByRole('button', { name: 'Marcar entrada' }).click();
-  await expect(g.getByText(/Entrada registrada ·/)).toBeVisible();
+  const salida = g.getByRole('button', { name: 'Marcar salida' });
+  const entrada = g.getByRole('button', { name: 'Marcar entrada' });
+  await expect(salida.or(entrada)).toBeVisible();
+  if (await salida.isVisible()) await salida.click();
+  else {
+    await g.getByRole('button', { name: /^Diurno/ }).click();
+    await entrada.click();
+  }
+  await expect(g.getByText(/(Entrada|Salida) registrada ·/)).toBeVisible();
 
   // Sin recargar: el admin y el PA de Hortifruti reciben el aviso; el PA de otro CD no.
-  await expect(admin.getByText(/Carlos Méndez: Entrada marcada a/)).toBeVisible({ timeout: 15_000 });
-  await expect(pa.getByText(/Carlos Méndez: Entrada marcada a/)).toBeVisible({ timeout: 15_000 });
+  await expect(admin.getByText(/Carlos Méndez: (Entrada|Salida) marcada a/)).toBeVisible({ timeout: 15_000 });
+  await expect(pa.getByText(/Carlos Méndez: (Entrada|Salida) marcada a/)).toBeVisible({ timeout: 15_000 });
   await paOtro.waitForTimeout(1500);
   expect(await campana(paOtro).getAttribute('aria-label')).toBe(antesPaOtro);
 

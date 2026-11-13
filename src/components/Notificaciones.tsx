@@ -13,14 +13,26 @@ import {
   pedirPermisoAvisos,
   permisoAvisos,
 } from '@/lib/avisos';
+import { activarPush, pushActivoLocal } from '@/lib/push';
+
+let pushRefrescado = false;
 
 export function CampanaNotificaciones({ base, oscuro }: { base: string; oscuro?: boolean }) {
   const { perfil, config } = useAuth();
   const { datos } = useNotificaciones();
   const [abierto, setAbierto] = useState(false);
   const [permiso, setPermiso] = useState(permisoAvisos);
+  const [pushOk, setPushOk] = useState(pushActivoLocal);
+  const [activando, setActivando] = useState(false);
   const nav = useNavigate();
   const toast = useToast();
+
+  // Una vez por sesión: si ya dio permiso, renueva el registro de este teléfono para los avisos push.
+  useEffect(() => {
+    if (!perfil || pushRefrescado || permisoAvisos() !== 'granted') return;
+    pushRefrescado = true;
+    activarPush(perfil.uid, false).then((r) => r === 'ok' && setPushOk(true));
+  }, [perfil]);
 
   // Aviso en vivo de lo nuevo: notificación del teléfono si la app está en segundo plano,
   // o un aviso dentro de la app si está abierta.
@@ -54,7 +66,12 @@ export function CampanaNotificaciones({ base, oscuro }: { base: string; oscuro?:
         )}
       </button>
       <Dialog abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Notificaciones">
-        {avisosSoportados() && permiso !== 'granted' && (
+        {avisosSoportados() && pushOk && permiso === 'granted' && (
+          <div className="flex items-center gap-2 rounded-xl bg-ok-bg px-3 py-2 text-[13px] font-semibold text-ok">
+            <Icon n="check" size={16} /> Avisos activados en este teléfono, aunque la app esté cerrada.
+          </div>
+        )}
+        {avisosSoportados() && (permiso !== 'granted' || !pushOk) && (
           <div className="flex flex-col gap-2 rounded-xl bg-info-bg p-3 text-[13px] text-info">
             {permiso === 'denied' ? (
               <span>
@@ -63,15 +80,30 @@ export function CampanaNotificaciones({ base, oscuro }: { base: string; oscuro?:
               </span>
             ) : (
               <>
-                <span>Recibe estos avisos como notificaciones del teléfono.</span>
+                <span>Recibe estos avisos como notificaciones del teléfono, aunque la app esté cerrada.</span>
                 <Button
                   tamano="sm"
                   variante="pri"
                   className="self-start"
+                  cargando={activando}
                   onClick={async () => {
-                    const r = await pedirPermisoAvisos();
-                    setPermiso(r);
-                    if (r === 'granted') toast('Avisos activados en este teléfono', 'ok');
+                    setActivando(true);
+                    try {
+                      const r = await activarPush(perfil.uid);
+                      if (r === 'ok') {
+                        setPushOk(true);
+                        toast('Avisos activados en este teléfono', 'ok');
+                      } else if (r === 'no-disponible') {
+                        // Sin el servicio push: al menos avisos con la app abierta o en segundo plano.
+                        const p = await pedirPermisoAvisos();
+                        if (p === 'granted') toast('Avisos activados mientras la app esté abierta', 'ok');
+                      } else if (r === 'error') {
+                        toast('No se pudo activar. Revisa tu conexión e inténtalo de nuevo.', 'error');
+                      }
+                    } finally {
+                      setPermiso(permisoAvisos());
+                      setActivando(false);
+                    }
                   }}
                 >
                   <Icon n="campana" size={16} />
