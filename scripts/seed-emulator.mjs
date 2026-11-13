@@ -311,7 +311,7 @@ await db
   .doc('config/general')
   .set({ diasRetencion: 90, diasCambioFirma: 30, nombreApp: 'Marcación CD', tema: 'auto' });
 await db.collection('notificaciones').add({
-  para: 'staff',
+  para: 'admin',
   uid: null,
   cdId: '7417',
   tipo: 'registro',

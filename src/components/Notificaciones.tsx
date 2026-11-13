@@ -1,17 +1,38 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthProvider';
 import { useNotificaciones } from '@/data/consultas';
 import { marcarLeida } from '@/data/servicios';
 import { haceTexto } from '@/lib/fechas';
 import { Icon } from './Icon';
-import { Dialog, Vacio, cx } from './ui';
+import { Button, Dialog, Vacio, cx, useToast } from './ui';
+import {
+  avisosSoportados,
+  mostrarAvisoSistema,
+  nuevasParaAvisar,
+  pedirPermisoAvisos,
+  permisoAvisos,
+} from '@/lib/avisos';
 
 export function CampanaNotificaciones({ base, oscuro }: { base: string; oscuro?: boolean }) {
-  const { perfil } = useAuth();
+  const { perfil, config } = useAuth();
   const { datos } = useNotificaciones();
   const [abierto, setAbierto] = useState(false);
+  const [permiso, setPermiso] = useState(permisoAvisos);
   const nav = useNavigate();
+  const toast = useToast();
+
+  // Aviso en vivo de lo nuevo: notificación del teléfono si la app está en segundo plano,
+  // o un aviso dentro de la app si está abierta.
+  useEffect(() => {
+    if (!perfil) return;
+    for (const n of nuevasParaAvisar(datos, perfil.uid)) {
+      const url = `${base}/${n.enlace ?? ''}`.replace(/\/$/, '');
+      if (document.visibilityState === 'hidden') mostrarAvisoSistema(n, url, config.nombreApp);
+      else toast(n.texto);
+    }
+  }, [datos, perfil, base, config.nombreApp, toast]);
+
   if (!perfil) return null;
   const sinLeer = datos.filter((n) => !n.leidaPor?.includes(perfil.uid));
   return (
@@ -33,6 +54,33 @@ export function CampanaNotificaciones({ base, oscuro }: { base: string; oscuro?:
         )}
       </button>
       <Dialog abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Notificaciones">
+        {avisosSoportados() && permiso !== 'granted' && (
+          <div className="flex flex-col gap-2 rounded-xl bg-info-bg p-3 text-[13px] text-info">
+            {permiso === 'denied' ? (
+              <span>
+                Los avisos están bloqueados en este teléfono. Para activarlos: toca el ícono 🔒 junto a la
+                dirección → Permisos → Notificaciones → Permitir.
+              </span>
+            ) : (
+              <>
+                <span>Recibe estos avisos como notificaciones del teléfono.</span>
+                <Button
+                  tamano="sm"
+                  variante="pri"
+                  className="self-start"
+                  onClick={async () => {
+                    const r = await pedirPermisoAvisos();
+                    setPermiso(r);
+                    if (r === 'granted') toast('Avisos activados en este teléfono', 'ok');
+                  }}
+                >
+                  <Icon n="campana" size={16} />
+                  Activar avisos en este teléfono
+                </Button>
+              </>
+            )}
+          </div>
+        )}
         {datos.length === 0 ? (
           <Vacio titulo="Sin notificaciones" />
         ) : (

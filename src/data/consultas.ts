@@ -123,7 +123,7 @@ export function useNotificaciones() {
     if (perfil.rol === 'admin')
       return query(
         col.notificaciones(),
-        where('para', '==', 'staff'),
+        where('para', 'in', ['staff', 'admin']),
         orderBy('creadoEn', 'desc'),
         limit(40),
       );

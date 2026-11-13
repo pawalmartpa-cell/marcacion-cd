@@ -78,6 +78,18 @@ for (const d of abiertas.docs) {
       comentario: null,
       creadoEn: FieldValue.serverTimestamp(),
     });
+  if (!SIMULAR)
+    await db.collection('notificaciones').add({
+      para: 'staff',
+      uid: null,
+      cdId: j.cdId,
+      tipo: 'alerta',
+      texto: `${j.nombre}: no marcó salida del ${dd}/${m}/${y}`,
+      enlace: `alertas/${d.id}_salida`,
+      creadoPor: 'sistema',
+      creadoEn: FieldValue.serverTimestamp(),
+      leidaPor: [],
+    });
   sinSalida++;
 }
 console.log(`  alertas "sin salida" nuevas: ${sinSalida}`);
