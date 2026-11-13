@@ -23,7 +23,8 @@ import {
   ErrorBox,
   Field,
   LinkButton,
-  TablaWrap,
+  Avatar,
+  Vacio,
   Tabs,
   mensajeError,
   useToast,
@@ -42,12 +43,29 @@ export const TONO_ESTADO: Record<EstadoUsuario, TonoChip> = {
 
 type Pestana = EstadoUsuario | 'invitaciones';
 
+function Contador({ txt, n, alerta }: { txt: string; n: number; alerta?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {txt}
+      <span
+        className={
+          'rounded-full px-1.5 text-[11px] font-extrabold leading-[18px] ' +
+          (alerta && n > 0 ? 'bg-wm-yellow text-wm-navy' : 'bg-line/70 text-muted')
+        }
+      >
+        {n}
+      </span>
+    </span>
+  );
+}
+
 export function Usuarios() {
   const { usuarios, actor, r, cdNombre, cargandoUsuarios, alcance } = usePanel();
   const toast = useToast();
   const [tab, setTab] = useState<Pestana>('pendiente');
   const [borrar, setBorrar] = useState<{ u: Usuario; rechazo: boolean } | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const invs = useInvitaciones(true);
   const invsVis = invs.datos.filter((i) => !alcance || i.cdId === alcance);
   const filas = usuarios.filter((u) => u.estado === tab);
@@ -64,190 +82,207 @@ export function Usuarios() {
     }
   };
 
+  const q = busqueda.trim().toLowerCase();
+  const coincide = (t: string) => !q || t.toLowerCase().includes(q);
+  const visibles = filas.filter((u) => coincide(`${nombreCompleto(u)} ${u.email}`));
+  const invsFiltradas = invsVis.filter((i) => coincide(`${i.nombre} ${i.apellidos} ${i.email}`));
+  const cuenta = (e: EstadoUsuario) => usuarios.filter((u) => u.estado === e).length;
+
   return (
     <>
       <Encabezado titulo="Usuarios" sub="Aprobar registros, roles, CD asignado y bloqueo" />
-      <Card>
-        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2.5">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <Tabs
             label="Estado de los usuarios"
             valor={tab}
             onChange={setTab}
             opciones={[
-              {
-                valor: 'pendiente',
-                texto: `Pendientes (${usuarios.filter((u) => u.estado === 'pendiente').length})`,
-              },
-              { valor: 'activo', texto: `Activos (${usuarios.filter((u) => u.estado === 'activo').length})` },
-              {
-                valor: 'bloqueado',
-                texto: `Bloqueados (${usuarios.filter((u) => u.estado === 'bloqueado').length})`,
-              },
-              { valor: 'invitaciones', texto: `Invitaciones (${invsVis.length})` },
+              { valor: 'pendiente', texto: <Contador txt="Pendientes" n={cuenta('pendiente')} alerta /> },
+              { valor: 'activo', texto: <Contador txt="Activos" n={cuenta('activo')} /> },
+              { valor: 'bloqueado', texto: <Contador txt="Bloqueados" n={cuenta('bloqueado')} /> },
+              { valor: 'invitaciones', texto: <Contador txt="Invitaciones" n={invsVis.length} /> },
             ]}
           />
-          <LinkButton variante="pri" to={r('usuarios/nuevo')}>
-            + Nuevo usuario
+        </div>
+        <div className="flex flex-1 gap-2">
+          <label className="relative flex-1">
+            <span className="sr-only">Buscar usuario</span>
+            <Icon
+              n="buscar"
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar por nombre o correo"
+              className="input !h-10 !pl-9"
+            />
+          </label>
+          <LinkButton
+            variante="pri"
+            to={r('usuarios/nuevo')}
+            className="!h-10 shrink-0"
+            aria-label="Nuevo usuario"
+          >
+            <Icon n="mas" size={18} />
+            <span className="hidden sm:inline">Nuevo usuario</span>
           </LinkButton>
         </div>
-        {cargandoUsuarios ? (
-          <Cargando />
-        ) : tab === 'invitaciones' ? (
-          <TablaWrap>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>CD</th>
-                <th>Creada</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invsVis.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-muted">
-                    No hay invitaciones pendientes. Al crear un usuario se genera una invitación: la persona
-                    entra con ese correo y queda activa.
-                  </td>
-                </tr>
-              ) : (
-                invsVis.map((i) => (
-                  <tr key={i.email}>
-                    <td className="font-bold">
+      </div>
+      {cargandoUsuarios ? (
+        <Cargando />
+      ) : tab === 'invitaciones' ? (
+        invsFiltradas.length === 0 ? (
+          <Card>
+            <Vacio titulo="No hay invitaciones pendientes">
+              Al crear un usuario se genera una invitación: la persona entra con ese correo y queda activa con
+              el rol elegido.
+            </Vacio>
+          </Card>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {invsFiltradas.map((i) => (
+              <article key={i.email} className="card flex flex-col gap-3 !p-4">
+                <div className="flex items-start gap-3">
+                  <Avatar nombre={i.nombre} apellidos={i.apellidos} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-bold">
                       {i.nombre} {i.apellidos}
-                    </td>
-                    <td className="text-muted">{i.email}</td>
-                    <td>
-                      <Chip tono={TONO_ROL[i.rol]}>{ROL_TEXTO[i.rol]}</Chip>
-                    </td>
-                    <td>{cdNombre(i.cdId)}</td>
-                    <td>{fechaCorta(i.creadoEn)}</td>
-                    <td>
+                    </div>
+                    <div className="truncate text-[13px] text-muted">{i.email}</div>
+                  </div>
+                  <Chip tono="info">Invitado</Chip>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <Chip tono={TONO_ROL[i.rol]}>{ROL_TEXTO[i.rol]}</Chip>
+                  <Chip tono="neutral">{cdNombre(i.cdId)}</Chip>
+                  <Chip tono="neutral">Desde {fechaCorta(i.creadoEn)}</Chip>
+                </div>
+                <div className="border-t border-line pt-3">
+                  <Button
+                    tamano="sm"
+                    variante="danger"
+                    className="w-full"
+                    disabled={ocupado}
+                    onClick={() => hacer(() => borrarInvitacion(actor, i.email), 'Invitación cancelada')}
+                  >
+                    Cancelar invitación
+                  </Button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )
+      ) : visibles.length === 0 ? (
+        <Card>
+          <Vacio titulo={q ? 'Nadie coincide con la búsqueda' : 'No hay usuarios en esta pestaña'}>
+            {tab === 'pendiente' && !q
+              ? 'Cuando un guardia se registre aparecerá aquí para aprobarlo.'
+              : undefined}
+          </Vacio>
+        </Card>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {visibles.map((u) => {
+            const yo = u.uid === actor.uid;
+            return (
+              <article key={u.uid} className="card flex flex-col gap-3 !p-4">
+                <div className="flex items-start gap-3">
+                  <Avatar nombre={u.nombre} apellidos={u.apellidos} />
+                  <div className="min-w-0 flex-1">
+                    <Link to={r(`guardia/${u.uid}`)} className="block truncate font-bold no-underline">
+                      {nombreCompleto(u)}
+                      {yo && <span className="font-semibold text-muted"> (tú)</span>}
+                    </Link>
+                    <div className="truncate text-[13px] text-muted">{u.email}</div>
+                  </div>
+                  <Chip tono={TONO_ESTADO[u.estado]}>{ESTADO_USUARIO_TEXTO[u.estado]}</Chip>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <Chip tono={TONO_ROL[u.rol]}>{ROL_TEXTO[u.rol]}</Chip>
+                  <Chip tono="neutral">{cdNombre(u.cdId)}</Chip>
+                  <Chip tono="neutral">{u.proveedor === 'google' ? 'Google' : 'Correo'}</Chip>
+                  {u.deviceIdPendiente && <Chip tono="warn">Cambio de teléfono</Chip>}
+                  {u.rol === 'seguridad' && !u.firma && <Chip tono="warn">Sin firma</Chip>}
+                </div>
+                <div className="mt-auto flex gap-2 border-t border-line pt-3">
+                  {u.estado === 'pendiente' ? (
+                    <>
+                      <Button
+                        tamano="sm"
+                        variante="ok"
+                        className="flex-1"
+                        disabled={ocupado}
+                        onClick={() =>
+                          hacer(
+                            () => cambiarEstadoUsuario(actor, u, 'activo'),
+                            `${nombreCompleto(u)} aprobado: ya puede marcar`,
+                          )
+                        }
+                      >
+                        <Icon n="check" size={16} />
+                        Aprobar
+                      </Button>
                       <Button
                         tamano="sm"
                         variante="danger"
+                        className="flex-1"
                         disabled={ocupado}
-                        onClick={() => hacer(() => borrarInvitacion(actor, i.email), 'Invitación cancelada')}
+                        onClick={() => setBorrar({ u, rechazo: true })}
                       >
-                        Cancelar
+                        <Icon n="x" size={16} />
+                        Rechazar
                       </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </TablaWrap>
-        ) : (
-          <TablaWrap>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>CD</th>
-                <th>Acceso</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filas.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-muted">
-                    No hay usuarios en esta pestaña.
-                  </td>
-                </tr>
-              ) : (
-                filas.map((u) => (
-                  <tr key={u.uid}>
-                    <td>
-                      <Link to={r(`guardia/${u.uid}`)} className="font-bold no-underline">
-                        {nombreCompleto(u)}
-                      </Link>
-                    </td>
-                    <td className="text-muted">{u.email}</td>
-                    <td>
-                      <Chip tono={TONO_ROL[u.rol]}>{ROL_TEXTO[u.rol]}</Chip>
-                    </td>
-                    <td>{cdNombre(u.cdId)}</td>
-                    <td>{u.proveedor === 'google' ? 'Google' : 'Correo'}</td>
-                    <td>
-                      <Chip tono={TONO_ESTADO[u.estado]}>{ESTADO_USUARIO_TEXTO[u.estado]}</Chip>
-                    </td>
-                    <td>
-                      <div className="flex gap-1.5">
-                        {u.estado === 'pendiente' ? (
-                          <>
-                            <Button
-                              tamano="sm"
-                              variante="ok"
-                              disabled={ocupado}
-                              onClick={() =>
-                                hacer(
-                                  () => cambiarEstadoUsuario(actor, u, 'activo'),
-                                  `${nombreCompleto(u)} aprobado: ya puede marcar`,
-                                )
-                              }
-                            >
-                              Aprobar
-                            </Button>
-                            <Button
-                              tamano="sm"
-                              variante="danger"
-                              disabled={ocupado}
-                              onClick={() => setBorrar({ u, rechazo: true })}
-                            >
-                              Rechazar
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <LinkButton tamano="sm" to={r(`usuarios/${u.uid}/editar`)}>
-                              Editar
-                            </LinkButton>
-                            <Button
-                              tamano="sm"
-                              variante="danger"
-                              disabled={ocupado || u.uid === actor.uid}
-                              onClick={() =>
-                                hacer(
-                                  () =>
-                                    cambiarEstadoUsuario(
-                                      actor,
-                                      u,
-                                      u.estado === 'bloqueado' ? 'activo' : 'bloqueado',
-                                    ),
-                                  u.estado === 'bloqueado'
-                                    ? `${nombreCompleto(u)} desbloqueado`
-                                    : `${nombreCompleto(u)} bloqueado: no puede entrar ni marcar`,
-                                )
-                              }
-                            >
-                              {u.estado === 'bloqueado' ? 'Desbloquear' : 'Bloquear'}
-                            </Button>
-                          </>
-                        )}
-                        {u.estado !== 'pendiente' && (
-                          <Button
-                            tamano="sm"
-                            aria-label={`Eliminar a ${nombreCompleto(u)}`}
-                            disabled={u.uid === actor.uid}
-                            onClick={() => setBorrar({ u, rechazo: false })}
-                          >
-                            <Icon n="x" size={16} />
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </TablaWrap>
-        )}
-      </Card>
+                    </>
+                  ) : (
+                    <>
+                      <LinkButton tamano="sm" className="flex-1" to={r(`usuarios/${u.uid}/editar`)}>
+                        <Icon n="editar" size={16} />
+                        Editar
+                      </LinkButton>
+                      <Button
+                        tamano="sm"
+                        variante={u.estado === 'bloqueado' ? 'ok' : 'default'}
+                        className="flex-1"
+                        disabled={ocupado || yo}
+                        onClick={() =>
+                          hacer(
+                            () =>
+                              cambiarEstadoUsuario(
+                                actor,
+                                u,
+                                u.estado === 'bloqueado' ? 'activo' : 'bloqueado',
+                              ),
+                            u.estado === 'bloqueado'
+                              ? `${nombreCompleto(u)} desbloqueado`
+                              : `${nombreCompleto(u)} bloqueado: no puede entrar ni marcar`,
+                          )
+                        }
+                      >
+                        <Icon n="candado" size={16} />
+                        {u.estado === 'bloqueado' ? 'Desbloquear' : 'Bloquear'}
+                      </Button>
+                      <Button
+                        tamano="sm"
+                        variante="danger"
+                        className="!px-2.5"
+                        aria-label={`Eliminar a ${nombreCompleto(u)}`}
+                        disabled={yo}
+                        onClick={() => setBorrar({ u, rechazo: false })}
+                      >
+                        <Icon n="basura" size={16} />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
       <Dialog
         abierto={!!borrar}
         onCerrar={() => setBorrar(null)}

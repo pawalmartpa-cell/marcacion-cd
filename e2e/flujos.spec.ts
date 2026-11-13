@@ -80,7 +80,7 @@ test('registro con correo → pendiente → el admin aprueba → puede marcar', 
   const a = await browser.newPage();
   await entrar(a, 'admin.cd@test.com');
   await a.getByRole('link', { name: /Usuarios/ }).click();
-  const fila = a.getByRole('row', { name: /Nuevo Guardia/ });
+  const fila = a.locator('article', { hasText: 'Nuevo Guardia' });
   await fila.getByRole('button', { name: 'Aprobar' }).click();
   await expect(a.getByText(/Nuevo Guardia aprobado/)).toBeVisible();
 
@@ -107,15 +107,12 @@ test('el admin edita el CD y el rol de un usuario', async ({ page }) => {
   await entrar(page, 'admin.cd@test.com');
   await page.goto('/admin/usuarios');
   await page.getByRole('tab', { name: /Activos/ }).click();
-  await page
-    .getByRole('row', { name: /Pedro Ramos/ })
-    .getByRole('link', { name: 'Editar' })
-    .click();
+  await page.locator('article', { hasText: 'Pedro Ramos' }).getByRole('link', { name: 'Editar' }).click();
   await page.getByLabel('Centro de distribución').selectOption('7018');
   await page.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(page.getByText('Cambios guardados')).toBeVisible();
   await page.getByRole('tab', { name: /Activos/ }).click();
-  await expect(page.getByRole('row', { name: /Pedro Ramos/ })).toContainText('San Juan Opico 7018');
+  await expect(page.locator('article', { hasText: 'Pedro Ramos' })).toContainText('San Juan Opico 7018');
 });
 
 test('el PA abre el detalle de un guardia de su CD', async ({ page }) => {
