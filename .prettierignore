@@ -1,0 +1,5 @@
+dist
+dev-dist
+coverage
+docs/prototipo-admin.html
+package-lock.json
