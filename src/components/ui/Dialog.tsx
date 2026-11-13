@@ -14,6 +14,10 @@ interface Props {
 export function Dialog({ abierto, onCerrar, titulo, children, ancho = 'md', acciones }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const previo = useRef<Element | null>(null);
+  // onCerrar cambia en cada render del padre (p. ej. al escribir): se guarda en una referencia para
+  // que el efecto no se reinicie con cada letra (eso cerraba el teclado en Android).
+  const cerrarRef = useRef(onCerrar);
+  cerrarRef.current = onCerrar;
 
   useEffect(() => {
     if (!abierto) return;
@@ -31,7 +35,7 @@ export function Dialog({ abierto, onCerrar, titulo, children, ancho = 'md', acci
       (auto ?? focusables()[0])?.focus();
     }, 30);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCerrar();
+      if (e.key === 'Escape') cerrarRef.current();
       if (e.key === 'Tab') {
         const f = focusables();
         if (!f.length) return;
@@ -53,7 +57,7 @@ export function Dialog({ abierto, onCerrar, titulo, children, ancho = 'md', acci
       document.body.style.overflow = '';
       (previo.current as HTMLElement | null)?.focus?.();
     };
-  }, [abierto, onCerrar]);
+  }, [abierto]);
 
   if (!abierto) return null;
   return createPortal(
