@@ -43,7 +43,7 @@ export default defineConfig({
         navigateFallback: '/index.html',
         // Maneja el toque en las notificaciones del sistema.
         importScripts: ['sw-avisos.js'],
-        navigateFallbackDenylist: [/^\/__/],
+        navigateFallbackDenylist: [/^\/__/, /^\/rutas/],
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>

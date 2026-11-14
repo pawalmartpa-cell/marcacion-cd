@@ -20,6 +20,7 @@ sueldos ni horas extras**, solo registra la marcación.
 | [docs/configuracion-firebase.md](docs/configuracion-firebase.md) | **Empieza aquí**: pasos desde el celular para crear Firebase, cargar secretos y crear el primer admin. |
 | [docs/manual-uso.md](docs/manual-uso.md) | Manual corto por rol. |
 | [docs/notificaciones-push.md](docs/notificaciones-push.md) | Avisos en el teléfono con la app cerrada (Cloudflare + FCM, gratis). |
+| [docs/rutas.md](docs/rutas.md) | **Rutas CD** (`/rutas/`): mapa 3D de tiendas y kilometraje de rutas para transporte. |
 | [docs/modelo-datos.md](docs/modelo-datos.md) | Colecciones, campos y permisos. |
 | [docs/estimacion-costos.md](docs/estimacion-costos.md) | Lecturas, escrituras y borrados frente al plan gratis. |
 | [docs/prototipo-admin.html](docs/prototipo-admin.html) | Prototipo de referencia del panel. |
